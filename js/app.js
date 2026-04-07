@@ -48,7 +48,13 @@ document.getElementById('btn-logout').onclick = () => signOut(auth);
 document.getElementById('subtab-new').onclick = () => UI.switchSubTab('new');
 document.getElementById('subtab-people').onclick = () => UI.switchSubTab('people');
 document.getElementById('subtab-exceptions').onclick = () => UI.switchSubTab('exceptions');
+const btnNew = document.getElementById('btn-manage-forms');
+const btnPeople = document.getElementById('btn-manage-people');
+const btnMiss = document.getElementById('btn-manage-missing');
 
+if(btnNew) btnNew.onclick = () => UI.switchSubTab('forms');
+if(btnPeople) btnPeople.onclick = () => UI.switchSubTab('people');
+if(btnMiss) btnMiss.onclick = () => UI.switchSubTab('missing');
 // --- 3. MANEJO DE LOGIN ---
 document.getElementById('login-form').onsubmit = async (e) => {
     e.preventDefault();
