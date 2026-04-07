@@ -159,29 +159,51 @@
                 </div>
             </section>
 
-            <section id="view-manage" class="view-section hidden space-y-8">
-                <div class="bg-white rounded-3xl border shadow-sm overflow-hidden border-blue-100">
-                    <div class="p-6 border-b bg-blue-50/50 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-black text-slate-800 text-sm tracking-tight">Excepciones de Identidad (Huérfanos)</h4>
-                            <p class="text-[10px] text-blue-600 font-bold uppercase tracking-widest mt-0.5">Certificaciones sin dueño asignado</p>
+            <section id="view-manage" class="view-section hidden space-y-6">
+                    <div class="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl w-fit">
+                        <button id="subtab-new" class="sub-tab px-4 py-2 text-xs font-bold rounded-xl transition-all">Nuevos Registros</button>
+                        <button id="subtab-people" class="sub-tab px-4 py-2 text-xs font-bold rounded-xl transition-all">Maestro de Personas</button>
+                        <button id="subtab-exceptions" class="sub-tab px-4 py-2 text-xs font-bold rounded-xl bg-white shadow-sm shadow-slate-200">Excepciones <span id="missing-badge" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-[9px] ml-1">0</span></button>
+                    </div>
+                
+                    <div id="manage-content">
+                        <div id="subview-new" class="sub-section hidden bg-white p-8 rounded-3xl border shadow-sm">
+                            <h4 class="font-bold mb-4">Registrar Colaborador y Certificación</h4>
+                            <p class="text-slate-500 text-sm">Aquí va tu formulario para ingresos manuales...</p>
                         </div>
-                        <span id="missing-badge" class="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black hidden">0</span>
+                
+                        <div id="subview-people" class="sub-section hidden bg-white rounded-3xl border shadow-sm overflow-hidden">
+                            <div class="p-4 bg-slate-50 border-b font-bold text-sm">Base de Datos de Colaboradores</div>
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b">
+                                    <tr><th class="px-6 py-4">Colaborador</th><th class="px-6 py-4">Ubicación / Área</th><th class="px-6 py-4 text-right">Gestión</th></tr>
+                                </thead>
+                                <tbody id="people-list-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                
+                        <div id="subview-exceptions" class="sub-section bg-white rounded-3xl border shadow-sm overflow-hidden">
+                            <div class="p-6 border-b">
+                                <h4 class="font-bold text-slate-800">Registros sin Colaborador Asignado (Huérfanos)</h4>
+                                <p class="text-xs text-slate-500">Personas detectadas en reportes que no existen en el maestro.</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b">
+                                        <tr>
+                                            <th class="px-6 py-4 w-1/4">Nombre Sugerido</th> <th class="px-6 py-4 w-1/4">Email Sugerido</th>
+                                            <th class="px-6 py-4 text-center">País</th>
+                                            <th class="px-6 py-4 text-center">Área</th>
+                                            <th class="px-6 py-4 text-center">Responsable</th>
+                                            <th class="px-6 py-4 text-right">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="missing-people-body" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b">
-                                <tr>
-                                    <th class="px-6 py-4 w-1/4">Nombre Detectado (Editable)</th>
-                                    <th class="px-6 py-4 w-1/4">Email Sugerido</th>
-                                    <th class="px-6 py-4 text-center">País</th>
-                                    <th class="px-6 py-4 text-right">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="missing-people-body" class="divide-y divide-slate-100"></tbody>
-                        </table>
-                    </div>
-                </div>
+                </section>
 
                 <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
                     <div class="p-6 border-b bg-slate-50"><h4 class="font-black text-slate-800 text-sm tracking-tight">Listado Oficial de Colaboradores</h4></div>
