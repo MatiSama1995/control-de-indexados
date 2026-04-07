@@ -7,68 +7,73 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https:/
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import * as UI from './ui-manager.js';
 
-let state = { personas: [], certificaciones: [] };
-window.state = state;
+// 1. VERIFICACIÓN DE CARGA
+console.log("CertiTrack: app.js cargado");
 
-// --- 1. LISTENERS DE FIREBASE ---
-onAuthStateChanged(auth, (user) => {
-    const loginScreen = document.getElementById('login-screen');
-    const appContent = document.getElementById('app-content');
-
-    if (user) {
-        if(loginScreen) loginScreen.classList.add('hidden');
-        if(appContent) appContent.classList.remove('hidden');
-        
-        onSnapshot(collection(db, 'artifacts', 'certitrack-v1', 'public', 'data', 'personas'), (snap) => {
-            state.personas = snap.docs.map(d => ({ email: d.id, ...d.data() }));
-            UI.refreshUI(state);
-        });
-
-        onSnapshot(collection(db, 'artifacts', 'certitrack-v1', 'public', 'data', 'certificaciones'), (snap) => {
-            state.certificaciones = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            UI.refreshUI(state);
-        });
-    } else {
-        if(loginScreen) loginScreen.classList.remove('hidden');
-        if(appContent) appContent.classList.add('hidden');
-    }
-});
-
-// --- 2. MANEJO DE LOGIN (PUESTO ARRIBA PARA PRIORIDAD) ---
+// 2. MANEJO DE LOGIN (Prioridad máxima)
 const loginForm = document.getElementById('login-form');
 if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); // <--- ESTO EVITA EL "?" EN LA URL
+    loginForm.onsubmit = async (e) => {
+        e.preventDefault(); 
+        e.stopPropagation();
+        
         const email = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
         
+        console.log("Intentando login para:", email);
+        
         try {
             await signInWithEmailAndPassword(auth, email, pass);
-            console.log("Login exitoso");
         } catch (err) {
-            alert("Error: " + err.message);
+            console.error("Error de Firebase:", err.code);
+            alert("Acceso denegado: " + err.message);
         }
-    });
+        return false;
+    };
 }
 
-// --- 3. NAVEGACIÓN (CON PROTECCIÓN CONTRA ERRORES) ---
-const setupClick = (id, fn) => {
-    const el = document.getElementById(id);
-    if (el) el.onclick = fn;
+// 3. DETECTAR USUARIO
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        document.getElementById('login-screen')?.classList.add('hidden');
+        document.getElementById('app-content')?.classList.remove('hidden');
+        
+        // Listeners de datos
+        onSnapshot(collection(db, 'artifacts', 'certitrack-v1', 'public', 'data', 'personas'), (snap) => {
+            window.state = { ...window.state, personas: snap.docs.map(d => ({ email: d.id, ...d.data() })) };
+            UI.refreshUI(window.state);
+        });
+
+        onSnapshot(collection(db, 'artifacts', 'certitrack-v1', 'public', 'data', 'certificaciones'), (snap) => {
+            window.state = { ...window.state, certificaciones: snap.docs.map(d => ({ id: d.id, ...d.data() })) };
+            UI.refreshUI(window.state);
+        });
+    } else {
+        document.getElementById('login-screen')?.classList.remove('hidden');
+        document.getElementById('app-content')?.classList.add('hidden');
+    }
+});
+
+// 4. NAVEGACIÓN (Solo si los elementos existen)
+const bindClick = (id, view) => {
+    const btn = document.getElementById(id);
+    if(btn) btn.onclick = () => UI.switchTab(view);
 };
 
-// Pestañas principales
-setupClick('btn-dashboard', () => UI.switchTab('dashboard'));
-setupClick('btn-upload', () => UI.switchTab('upload'));
-setupClick('btn-manage', () => UI.switchTab('manage'));
-setupClick('btn-table', () => UI.switchTab('table'));
-setupClick('btn-support', () => UI.switchTab('support'));
-setupClick('btn-logout', () => signOut(auth));
+bindClick('btn-dashboard', 'dashboard');
+bindClick('btn-upload', 'upload');
+bindClick('btn-manage', 'manage');
+bindClick('btn-table', 'table');
+bindClick('btn-support', 'support');
 
-// Sub-pestañas de Gestión (Las IDs de tu HTML real)
-setupClick('btn-manage-forms', () => UI.switchSubTab('forms'));
-setupClick('btn-manage-people', () => UI.switchSubTab('people'));
-setupClick('btn-manage-missing', () => UI.switchSubTab('missing'));
+const btnLogout = document.getElementById('btn-logout');
+if(btnLogout) btnLogout.onclick = () => signOut(auth);
 
-// --- 4. BUSCADOR ---
-document.getElementById('table-search')?.addEventListener('input', () => UI.refreshUI(state));
+// Sub-pestañas
+const subClick = (id, sub) => {
+    const btn = document.getElementById(id);
+    if(btn) btn.onclick = () => UI.switchSubTab(sub);
+};
+subClick('btn-manage-forms', 'forms');
+subClick('btn-manage-people', 'people');
+subClick('btn-manage-missing', 'missing');
