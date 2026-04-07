@@ -23,34 +23,54 @@ window.toggleUserStatus = async (email, estadoActual) => {
     }
 };
 
-// --- VINCULAR HUÉRFANO (USANDO BATCH PARA HACER TODO JUNTO) ---
-window.linkHuerfano = async (idSafe, nombreHuerfano, stateCertificaciones) => {
+/**
+ * VINCULAR HUÉRFANO
+ * @param {string} idSafe - ID para identificar los elementos del DOM.
+ * @param {string} originalKey - El identificador original (email o ID temporal) para buscar en el estado.
+ * @param {Array} stateCertificaciones - El listado actual de certificaciones.
+ */
+window.linkHuerfano = async (idSafe, originalKey, stateCertificaciones) => {
+    // Capturamos todos los valores desde los inputs editables
+    const nuevoNombre = document.getElementById(`m-n-${idSafe}`).value.trim();
     const emailDestino = document.getElementById(`m-e-${idSafe}`).value.toLowerCase().trim();
+    const paisDestino = document.getElementById(`m-p-${idSafe}`).value;
+    const areaDestino = document.getElementById(`m-a-${idSafe}`).value;
+    const responsableDestino = document.getElementById(`m-r-${idSafe}`).value;
+
+    if (!nuevoNombre) return alert("El nombre no puede estar vacío");
     if (!emailDestino.includes('@')) return alert("Email no válido");
 
     try {
         const batch = writeBatch(db);
         
-        // 1. Crear el nuevo colaborador si no existe
+        // 1. Crear o actualizar el colaborador con los datos editados
         const userRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', emailDestino);
         batch.set(userRef, {
-            nombre: nombreHuerfano,
+            nombre: nuevoNombre,
             email: emailDestino,
             activo: true,
-            area: "Sin definir",
-            pais: "N/A"
+            area: areaDestino || "Sin definir",
+            pais: paisDestino || "N/A",
+            responsable: responsableDestino || "N/A"
         }, { merge: true });
 
-        // 2. Buscar todos los certificados que le pertenecían al "Nombre" y pasarlos al "Email"
-        const huerfanos = stateCertificaciones.filter(c => c.tempName === nombreHuerfano);
-        huerfanos.forEach(c => {
+        // 2. Buscar todos los certificados vinculados a la 'originalKey' y pasarlos al nuevo email
+        const registrosAfectados = stateCertificaciones.filter(c => 
+            c.userEmail === originalKey || c.tempName === originalKey
+        );
+
+        registrosAfectados.forEach(c => {
             const certRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', c.id);
-            batch.update(certRef, { userEmail: emailDestino, tempName: null });
+            batch.update(certRef, { 
+                userEmail: emailDestino, 
+                tempName: null // Limpiamos el nombre temporal
+            });
         });
 
         await batch.commit();
         alert("¡Vinculación completada con éxito!");
     } catch (e) {
         console.error("Error en la vinculación masiva:", e);
+        alert("Error al procesar la vinculación");
     }
 };
