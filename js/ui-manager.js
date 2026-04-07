@@ -43,14 +43,14 @@ export const refreshUI = (state) => {
     
     if(!masterBody) return;
 
-    // Limpiar todo antes de renderizar
+    // Limpiar contenedores
     masterBody.innerHTML = ''; alertsBody.innerHTML = ''; 
     peopleBody.innerHTML = ''; missingBody.innerHTML = '';
 
     const now = new Date();
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
     
-    // Variables para el Dashboard
+    // Inicializar contadores para el Dashboard
     let stats = { total: 0, active: 0, warning: 0, expired: 0 };
     let huerfanos = new Map();
 
@@ -67,6 +67,126 @@ export const refreshUI = (state) => {
                 </td>
             </tr>`;
     });
+
+    // 2. Procesar Certificaciones y alimentar Dashboard
+    state.certificaciones.forEach(c => {
+        const p = state.personas.find(per => per.email === c.userEmail);
+        const isMiss = !p;
+        const isInactive = p && !p.activo;
+
+        // Recolectar Huérfanos para la pestaña de Gestión
+        if (isMiss) {
+            huerfanos.set(c.userEmail, { name: c.tempName || 'Detectado', email: c.userEmail, country: c.detectedCountry || 'CH' });
+        }
+
+        const match = !search || c.nombre.toLowerCase().includes(search) || (p?.nombre || "").toLowerCase().includes(search);
+        
+        if (match) {
+            const vDate = new Date(c.vencimiento);
+            let status = "Vigente", col = "bg-green-100 text-green-700";
+            
+            // Lógica de estados para Dashboard y Tablas
+            if (isMiss) { 
+                status = "Huérfano"; col = "bg-red-600 text-white"; 
+                stats.expired++; 
+            } else if (isInactive) {
+                status = "Inactivo"; col = "bg-slate-400 text-white";
+            } else if (vDate < now) { 
+                status = "Vencida"; col = "bg-red-100 text-red-700"; 
+                stats.expired++;
+            } else if (vDate < warningLimit) { 
+                status = "Por Vencer"; col = "bg-amber-100 text-amber-700"; 
+                stats.warning++;
+            } else {
+                status = "Vigente"; col = "bg-green-100 text-green-700";
+                stats.active++;
+            }
+            
+            if (p && p.activo) stats.total++;
+
+            // Crear la fila para la tabla
+            const trHTML = `
+                <tr class="border-b hover:bg-slate-50 ${isInactive ? 'opacity-40' : ''}">
+                    <td class="p-4 font-bold text-sm">${p ? p.nombre : (c.tempName || 'Huérfano')}</td>
+                    <td class="p-4 text-xs"><b>${c.marca}</b><br>${c.nombre}</td>
+                    <td class="p-4 text-xs text-center">${c.vencimiento}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${col}">${status}</span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <button onclick="window.deleteCert('${c.id}')" class="text-slate-300 hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>`;
+
+            // Añadir a Tabla Maestra
+            masterBody.innerHTML += trHTML;
+
+            // Añadir a Alertas Críticas si no está vigente
+            if (status !== "Vigente" && status !== "Inactivo") {
+                alertsBody.innerHTML += trHTML;
+            }
+        }
+    });
+
+    // --- ACTUALIZAR CONTADORES VISUALES (DASHBOARD) ---
+    const updateEl = (id, val) => {
+        const el = document.getElementById(id);
+        if(el) el.innerText = val;
+    };
+
+    updateEl('stat-total', stats.total);
+    updateEl('stat-active', stats.active);
+    updateEl('stat-warning', stats.warning);
+    updateEl('stat-expired', stats.expired);
+    updateEl('alerts-count', stats.expired + stats.warning);
+
+    // 3. Excepciones (NOMBRE SUGERIDO EDITABLE)
+    huerfanos.forEach((v, k) => {
+        const idSafe = k.replace(/[.@\s]/g, '_'); 
+        missingBody.innerHTML += `
+            <tr class="border-b hover:bg-slate-50">
+                <td class="px-4 py-3">
+                    <input type="text" id="m-n-${idSafe}" value="${v.name}" class="w-full text-xs p-2 border rounded-xl font-bold bg-white focus:ring-2 focus:ring-blue-400 outline-none">
+                </td>
+                <td class="px-4 py-3">
+                    <input type="email" id="m-e-${idSafe}" value="${v.email.includes('huerfano') ? '' : v.email}" class="w-full text-xs p-2 border rounded-xl outline-none bg-slate-50" placeholder="Email...">
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <select id="m-p-${idSafe}" class="text-[10px] p-2 border rounded-xl font-bold uppercase">
+                        <option value="CHILE" ${v.country.includes('CH') ? 'selected' : ''}>CH</option>
+                        <option value="PERÚ" ${v.country.includes('PE') ? 'selected' : ''}>PE</option>
+                        <option value="COLOMBIA" ${v.country.includes('CO') ? 'selected' : ''}>CO</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <select id="m-a-${idSafe}" class="text-[10px] p-2 border rounded-xl font-bold uppercase">
+                        <option value="" disabled selected>ÁREA</option>
+                        <option value="INGENIERIA">INGENIERÍA</option>
+                        <option value="COMERCIAL">COMERCIAL</option>
+                        <option value="PRE-VENTA">PRE-VENTA</option>
+                        <option value="COE">COE</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="text" id="m-r-${idSafe}" placeholder="Resp." class="w-full text-xs p-2 border rounded-xl outline-none bg-slate-50">
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <button onclick="window.linkHuerfano('${idSafe}', '${k}')" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black hover:bg-blue-700 shadow-md">ASOCIAR</button>
+                </td>
+            </tr>`;
+    });
+
+    // Actualizar badge de excepciones
+    const badge = document.getElementById('missing-badge');
+    if(badge) {
+        badge.innerText = huerfanos.size;
+        badge.style.display = huerfanos.size > 0 ? 'inline-block' : 'none';
+    }
+
+    lucide.createIcons();
+};
 
     // 2. Certificaciones y Lógica de Dashboard
     state.certificaciones.forEach(c => {
