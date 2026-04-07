@@ -284,7 +284,10 @@ const updateUI = () => {
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-green-100 text-green-700">Activo</span>
                 </td>
                 <td class="px-6 py-3 text-right">
-                    <button onclick="window.toggleUser('${p.email}', true)" class="text-xs font-bold text-red-500 hover:text-red-700">Inhabilitar</button>
+                    <div class="flex justify-end space-x-4">
+                        <button onclick="window.openEditModal('${p.email}')" class="text-xs font-bold text-blue-500 hover:text-blue-700">Editar</button>
+                        <button onclick="window.toggleUser('${p.email}', true)" class="text-xs font-bold text-red-500 hover:text-red-700">Inhabilitar</button>
+                    </div>
                 </td>`;
             if(peopleTable) peopleTable.appendChild(tr);
         } else {
