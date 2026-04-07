@@ -1,38 +1,56 @@
 import { db, firestoreAppId } from './firebase-config.js';
-import { doc, deleteDoc, updateDoc, writeBatch, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, deleteDoc, updateDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-export const showNotification = (msg, type) => {
-    const el = document.getElementById('notification');
-    el.className = `fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-xl bg-white border-l-4 ${type === 'success' ? 'border-green-500' : 'border-red-500'}`;
-    el.innerText = msg;
-    el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 4000);
+// --- BORRAR UNA CERTIFICACIÓN ---
+window.deleteCert = async (id) => {
+    if (confirm("¿Estás seguro de eliminar este registro permanentemente?")) {
+        try {
+            await deleteDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', id));
+            console.log("Registro eliminado:", id);
+        } catch (e) {
+            console.error("Error al borrar:", e);
+        }
+    }
 };
 
-export const refreshUI = (state) => {
-    // 1. Lógica de Tabla Maestra y Alertas
-    const masterBody = document.getElementById('master-table-body');
-    const alertsBody = document.getElementById('dash-alerts-tbody');
-    masterBody.innerHTML = ''; alertsBody.innerHTML = '';
-
-    state.certificaciones.forEach(c => {
-        const p = state.personas.find(per => per.email === c.userEmail);
-        const row = `<tr><td class="p-4">${p ? p.nombre : (c.tempName || 'Huérfano')}</td><td class="p-4">${c.marca}</td><td class="p-4">${c.vencimiento}</td></tr>`;
-        masterBody.innerHTML += row;
-        // Lógica de alertas... (similar a tu código original)
-    });
-
-    // 2. Lógica de Huérfanos
-    const missBody = document.getElementById('missing-people-body');
-    missBody.innerHTML = '';
-    // Filtrar huerfanos y renderizar...
-    
-    lucide.createIcons();
+// --- CAMBIAR ESTADO DE USUARIO (ACTIVO/INACTIVO) ---
+window.toggleUserStatus = async (email, estadoActual) => {
+    try {
+        const userRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email);
+        await updateDoc(userRef, { activo: !estadoActual });
+    } catch (e) {
+        console.error("Error al actualizar usuario:", e);
+    }
 };
 
-export const switchTab = (id) => {
-    document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('tab-active'));
-    document.getElementById(`view-${id}`).classList.remove('hidden');
-    document.getElementById(`tab-${id}`).classList.add('tab-active');
+// --- VINCULAR HUÉRFANO (USANDO BATCH PARA HACER TODO JUNTO) ---
+window.linkHuerfano = async (idSafe, nombreHuerfano, stateCertificaciones) => {
+    const emailDestino = document.getElementById(`m-e-${idSafe}`).value.toLowerCase().trim();
+    if (!emailDestino.includes('@')) return alert("Email no válido");
+
+    try {
+        const batch = writeBatch(db);
+        
+        // 1. Crear el nuevo colaborador si no existe
+        const userRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', emailDestino);
+        batch.set(userRef, {
+            nombre: nombreHuerfano,
+            email: emailDestino,
+            activo: true,
+            area: "Sin definir",
+            pais: "N/A"
+        }, { merge: true });
+
+        // 2. Buscar todos los certificados que le pertenecían al "Nombre" y pasarlos al "Email"
+        const huerfanos = stateCertificaciones.filter(c => c.tempName === nombreHuerfano);
+        huerfanos.forEach(c => {
+            const certRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', c.id);
+            batch.update(certRef, { userEmail: emailDestino, tempName: null });
+        });
+
+        await batch.commit();
+        alert("¡Vinculación completada con éxito!");
+    } catch (e) {
+        console.error("Error en la vinculación masiva:", e);
+    }
 };
