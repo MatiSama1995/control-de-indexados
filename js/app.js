@@ -4,75 +4,11 @@ import { auth, db, firestoreAppId } from './firebase-config.js';
 import { showNotification, showLoader, hideLoader, switchTab, switchManageTab, updateTopIndicator } from './ui-manager.js';
 import { processPeople, processCisco, processFortinet, processGeneralCerts } from './data-processor.js';
 
-// ESTADO GLOBAL
-let state = {
-    personas: [],
-    certificaciones: [],
-    charts: { status: null, colabs: null, countries: null }
-};
+console.log("🚀 Módulo app.js cargado correctamente. Iniciando...");
 
-let activeDashFilters = { pais: null, area: null, marca: null, certificacion: null, colaborador: null };
-let unsubscribePersonas = null;
-let unsubscribeCerts = null;
-let confirmActionCallback = null;
-
-const filterConfigs = [
-    { id: 'pais', label: 'Ubicación', search: false },
-    { id: 'area', label: 'Área', search: false },
-    { id: 'marca', label: 'Fabricante', search: false },
-    { id: 'certificacion', label: 'Certificación', search: true },
-    { id: 'colaborador', label: 'Colaborador', search: true }
-];
-
-// INICIALIZACIÓN DE ICONOS
-lucide.createIcons();
-setTimeout(() => lucide.createIcons(), 200);
-
-// EXPONER FUNCIONES DE UI AL WINDOW (Para que el HTML pueda llamarlas)
-window.switchTab = switchTab;
-window.switchManageTab = switchManageTab;
-
-// MODAL DE CONFIRMACIÓN
-window.showConfirm = (title, message, onConfirm, okText = "Confirmar", isDanger = true) => {
-    const titleEl = document.getElementById('confirm-title');
-    const msgEl = document.getElementById('confirm-message');
-    const btnOk = document.getElementById('btn-confirm-ok');
-    const iconBg = document.getElementById('confirm-icon-bg');
-    const modal = document.getElementById('custom-confirm-modal');
-    
-    if(titleEl) titleEl.innerText = title;
-    if(msgEl) msgEl.innerText = message;
-    
-    if(btnOk) {
-        btnOk.innerText = okText;
-        if (isDanger) {
-            btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-md";
-            if(iconBg) iconBg.className = "bg-red-100 p-2 rounded-full text-red-600";
-        } else {
-            btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md";
-            if(iconBg) iconBg.className = "bg-blue-100 p-2 rounded-full text-blue-600";
-        }
-    }
-
-    confirmActionCallback = onConfirm;
-    if(modal) modal.classList.remove('hidden');
-};
-
-window.closeConfirm = () => {
-    const modal = document.getElementById('custom-confirm-modal');
-    if(modal) modal.classList.add('hidden');
-    confirmActionCallback = null;
-};
-
-const btnConfirmOk = document.getElementById('btn-confirm-ok');
-if(btnConfirmOk) {
-    btnConfirmOk.addEventListener('click', () => {
-        if (confirmActionCallback) confirmActionCallback();
-        window.closeConfirm();
-    });
-}
-
-// LOGICA DE LOGIN EXPUESTA AL WINDOW
+// ==========================================
+// 1. FUNCIONES CRÍTICAS (Se cargan primero)
+// ==========================================
 window.handleLogin = async () => {
     const emailEl = document.getElementById('username');
     const passEl = document.getElementById('password');
@@ -118,7 +54,84 @@ window.logout = () => {
     }, "Cerrar Sesión", false);
 };
 
-// AUTENTICACIÓN Y LISTENERS BD
+window.switchTab = switchTab;
+window.switchManageTab = switchManageTab;
+
+// ==========================================
+// 2. PROTECCIÓN DE ÍCONOS
+// ==========================================
+if (window.lucide) {
+    window.lucide.createIcons();
+    setTimeout(() => window.lucide.createIcons(), 300);
+}
+
+// ==========================================
+// 3. ESTADO GLOBAL
+// ==========================================
+let state = {
+    personas: [],
+    certificaciones: [],
+    charts: { status: null, colabs: null, countries: null }
+};
+
+let activeDashFilters = { pais: null, area: null, marca: null, certificacion: null, colaborador: null };
+let unsubscribePersonas = null;
+let unsubscribeCerts = null;
+let confirmActionCallback = null;
+
+const filterConfigs = [
+    { id: 'pais', label: 'Ubicación', search: false },
+    { id: 'area', label: 'Área', search: false },
+    { id: 'marca', label: 'Fabricante', search: false },
+    { id: 'certificacion', label: 'Certificación', search: true },
+    { id: 'colaborador', label: 'Colaborador', search: true }
+];
+
+// ==========================================
+// 4. MODAL DE CONFIRMACIÓN
+// ==========================================
+window.showConfirm = (title, message, onConfirm, okText = "Confirmar", isDanger = true) => {
+    const titleEl = document.getElementById('confirm-title');
+    const msgEl = document.getElementById('confirm-message');
+    const btnOk = document.getElementById('btn-confirm-ok');
+    const iconBg = document.getElementById('confirm-icon-bg');
+    const modal = document.getElementById('custom-confirm-modal');
+    
+    if(titleEl) titleEl.innerText = title;
+    if(msgEl) msgEl.innerText = message;
+    
+    if(btnOk) {
+        btnOk.innerText = okText;
+        if (isDanger) {
+            btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-md";
+            if(iconBg) iconBg.className = "bg-red-100 p-2 rounded-full text-red-600";
+        } else {
+            btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md";
+            if(iconBg) iconBg.className = "bg-blue-100 p-2 rounded-full text-blue-600";
+        }
+    }
+
+    confirmActionCallback = onConfirm;
+    if(modal) modal.classList.remove('hidden');
+};
+
+window.closeConfirm = () => {
+    const modal = document.getElementById('custom-confirm-modal');
+    if(modal) modal.classList.add('hidden');
+    confirmActionCallback = null;
+};
+
+const btnConfirmOk = document.getElementById('btn-confirm-ok');
+if(btnConfirmOk) {
+    btnConfirmOk.addEventListener('click', () => {
+        if (confirmActionCallback) confirmActionCallback();
+        window.closeConfirm();
+    });
+}
+
+// ==========================================
+// 5. AUTENTICACIÓN Y LISTENERS BD
+// ==========================================
 window.addEventListener('online', () => updateTopIndicator(auth.currentUser !== null));
 window.addEventListener('offline', () => updateTopIndicator(false));
 
@@ -165,7 +178,9 @@ const startDatabaseListeners = () => {
     });
 };
 
-// SUBIDA DE ARCHIVOS
+// ==========================================
+// 6. RESTO DE FUNCIONES DEL SISTEMA
+// ==========================================
 const handleFileUpload = (id, type) => {
     const input = document.getElementById(id);
     if (!input) return;
@@ -199,7 +214,6 @@ handleFileUpload('file-fortinet', 'fortinet');
 handleFileUpload('file-cisco', 'cisco');
 handleFileUpload('file-general', 'general');
 
-// FILTROS DASHBOARD
 window.toggleFilterMenu = (key) => {
     document.querySelectorAll('.filter-dropdown-menu').forEach(menu => {
         if (menu.id !== `menu-${key}`) menu.classList.add('hidden');
@@ -236,7 +250,6 @@ window.addEventListener('click', (e) => {
     }
 });
 
-// LOGICA DE RENDERIZADO UI COMPLETA
 const updateUI = () => {
     const table = document.getElementById('master-table-body');
     const missTable = document.getElementById('missing-people-body');
@@ -378,7 +391,7 @@ const updateUI = () => {
         s.value = current;
     }
 
-    lucide.createIcons();
+    if(window.lucide) window.lucide.createIcons();
     renderDashboard();
 };
 
@@ -509,7 +522,7 @@ const renderDashboard = () => {
             </div>`;
         });
         filterContainer.innerHTML = filtersHTML;
-        lucide.createIcons();
+        if(window.lucide) window.lucide.createIcons();
     }
 };
 
@@ -517,7 +530,7 @@ const renderCharts = (statusData, colabsData, countriesData) => {
     const chartStatusEl = document.getElementById('chartStatus');
     const chartColabsEl = document.getElementById('chartColabs');
     const chartCountriesEl = document.getElementById('chartCountries');
-    if (!chartStatusEl || !chartColabsEl || !chartCountriesEl) return;
+    if (!chartStatusEl || !chartColabsEl || !chartCountriesEl || !window.Chart) return;
 
     if (state.charts.status) state.charts.status.destroy();
     if (state.charts.colabs) state.charts.colabs.destroy();
@@ -546,7 +559,6 @@ const renderCharts = (statusData, colabsData, countriesData) => {
     });
 };
 
-// CRUD MANUAL Y HERRAMIENTAS MANTENIMIENTO
 window.toggleUser = async (email, estadoActual) => {
     showLoader("Actualizando...");
     try { await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { activo: !estadoActual }); showNotification("Usuario actualizado", "success"); } 
@@ -658,12 +670,11 @@ window.exportToExcel = () => {
         return acc;
     }, []);
     if (dataToExport.length === 0) return showNotification("No hay datos para exportar", "error");
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Certificaciones_Vigentes");
-    XLSX.writeFile(wb, "Reporte_CertiTrack_Vigentes.xlsx");
+    const ws = window.XLSX.utils.json_to_sheet(dataToExport);
+    const wb = window.XLSX.utils.book_new(); window.XLSX.utils.book_append_sheet(wb, ws, "Certificaciones_Vigentes");
+    window.XLSX.writeFile(wb, "Reporte_CertiTrack_Vigentes.xlsx");
 };
 
-// LISTENERS DE BUSCADORES
 const tableSearch = document.getElementById('table-search');
 if(tableSearch) tableSearch.addEventListener('input', () => updateUI());
 
