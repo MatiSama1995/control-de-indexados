@@ -346,7 +346,11 @@ const updateUI = () => {
         let areaOptionsHTML = `<option value="" selected disabled>Seleccione Área...</option>`;
         validAreas.forEach(a => areaOptionsHTML += `<option value="${a}">${a}</option>`);
         
-        tr.innerHTML = `<td class="px-6 py-3 font-bold text-xs text-slate-700">${val.name}</td>
+        // AQUÍ SE AGREGA EL CAMPO DE TEXTO EDITABLE PARA EL NOMBRE
+        tr.innerHTML = `
+        <td class="px-6 py-3">
+            <input type="text" value="${val.name}" placeholder="Nombre a Registrar" class="w-full text-xs font-bold text-slate-800 p-2 border border-blue-200 rounded outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30" id="m-n-${idSafe}">
+        </td>
         <td class="px-6 py-3"><input type="email" value="${val.email}" placeholder="Email real" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500" id="m-e-${idSafe}"></td>
         <td class="px-6 py-3 text-center"><select id="m-p-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${optionsHTML}</select></td>
         <td class="px-6 py-3"><select id="m-a-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${areaOptionsHTML}</select></td>
@@ -597,13 +601,20 @@ window.deleteCertificationsByBrand = async () => {
     });
 };
 
-window.disableHuerfano = async (id, nombre, originalEmail) => {
-    const emailToUse = originalEmail && originalEmail.trim() !== "" ? originalEmail : `huerfano_${nombre.replace(/\s+/g, '_').toLowerCase()}@inactivo.local`;
-    window.showConfirm("Inhabilitar", `¿Deseas inhabilitar a "${nombre}"?`, async () => {
+// ==========================================
+// NUEVAS FUNCIONES EDITABLES PARA HUÉRFANOS
+// ==========================================
+window.disableHuerfano = async (id, nombreOriginal, originalEmail) => {
+    // Leemos el nombre desde el input por si lo editaron
+    const nombreEl = document.getElementById(`m-n-${id}`);
+    const nombreFinal = nombreEl ? nombreEl.value.trim() : nombreOriginal;
+
+    const emailToUse = originalEmail && originalEmail.trim() !== "" ? originalEmail : `huerfano_${nombreFinal.replace(/\s+/g, '_').toLowerCase()}@inactivo.local`;
+    window.showConfirm("Inhabilitar", `¿Deseas inhabilitar a "${nombreFinal}"?`, async () => {
         showLoader("Inhabilitando...");
         try {
-            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', emailToUse), { nombre, email: emailToUse, pais: "N/A", area: "Sin definir", activo: false, responsable: "N/A" });
-            const certs = state.certificaciones.filter(c => c.tempName === nombre || c.userEmail === originalEmail || c.userEmail === `huerfano_${nombre.replace(/\s+/g, '_')}`);
+            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', emailToUse), { nombre: nombreFinal, email: emailToUse, pais: "N/A", area: "Sin definir", activo: false, responsable: "N/A" });
+            const certs = state.certificaciones.filter(c => c.tempName === nombreOriginal || c.userEmail === originalEmail || c.userEmail === `huerfano_${nombreOriginal.replace(/\s+/g, '_')}`);
             const batch = writeBatch(db);
             certs.forEach(cert => batch.update(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { userEmail: emailToUse, tempName: null }));
             await batch.commit(); showNotification("Inhabilitado", "success");
@@ -611,23 +622,40 @@ window.disableHuerfano = async (id, nombre, originalEmail) => {
     });
 };
 
-window.linkHuerfano = async (id, nombre) => {
+window.linkHuerfano = async (id, nombreOriginal) => {
+    // Rescatamos TODOS los valores de los inputs, incluyendo el nuevo de Nombre
+    const nombreEl = document.getElementById(`m-n-${id}`);
     const emailEl = document.getElementById(`m-e-${id}`);
     const areaEl = document.getElementById(`m-a-${id}`);
     const respEl = document.getElementById(`m-r-${id}`);
     const paisEl = document.getElementById(`m-p-${id}`);
     
+    const nombreFinal = nombreEl ? nombreEl.value.trim() : nombreOriginal;
     const email = emailEl ? emailEl.value.toLowerCase().trim() : "";
     const area = areaEl ? areaEl.value : "";
-    const responsable = respEl ? respEl.value.trim() : "N/A";
+    const responsable = respEl && respEl.value.trim() !== "" ? respEl.value.trim() : "N/A";
     const pais = paisEl ? paisEl.value.toUpperCase() : "";
 
+    if (!nombreFinal || nombreFinal === "") return showNotification("El nombre no puede quedar vacío", "error");
     if (!email.includes('@') || !pais || !area) return showNotification("Faltan datos válidos", "error");
+    
     showLoader("Vinculando...");
     try {
-        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { nombre, email, pais, area, activo: true, responsable: responsable || "N/A" });
-        const certs = state.certificaciones.filter(c => c.tempName === nombre || c.userEmail === `huerfano_${nombre.replace(/\s+/g, '_')}`);
-        for(let cert of certs) await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { userEmail: email, tempName: null });
+        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { 
+            nombre: nombreFinal, 
+            email, 
+            pais, 
+            area, 
+            activo: true, 
+            responsable
+        });
+        const certs = state.certificaciones.filter(c => c.tempName === nombreOriginal || c.userEmail === `huerfano_${nombreOriginal.replace(/\s+/g, '_')}`);
+        for(let cert of certs) {
+            await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { 
+                userEmail: email, 
+                tempName: null 
+            });
+        }
         showNotification("Asociado con éxito", "success");
     } catch (e) { showNotification("Error", "error"); } finally { hideLoader(); }
 };
