@@ -741,3 +741,64 @@ if(tableSearch) tableSearch.addEventListener('input', () => updateUI());
 
 const peopleSearch = document.getElementById('people-search');
 if(peopleSearch) peopleSearch.addEventListener('input', () => updateUI());
+
+// ==========================================
+// EDICIÓN DE COLABORADORES (MAESTRO PERSONAS)
+// ==========================================
+window.openEditModal = (email) => {
+    const p = state.personas.find(per => per.email === email);
+    if (!p) return;
+    
+    document.getElementById('edit-original-email').value = p.email;
+    document.getElementById('edit-nombre').value = p.nombre;
+    document.getElementById('edit-email').value = p.email;
+    document.getElementById('edit-responsable').value = p.responsable && p.responsable !== "N/A" ? p.responsable : "";
+
+    // Setear options del Select asegurando que el valor exista
+    const areaSelect = document.getElementById('edit-area');
+    if ([...areaSelect.options].some(o => o.value === p.area)) areaSelect.value = p.area;
+    else areaSelect.value = "Sin definir";
+
+    const paisSelect = document.getElementById('edit-pais');
+    if ([...paisSelect.options].some(o => o.value === p.pais)) paisSelect.value = p.pais;
+    else paisSelect.value = "N/A";
+
+    const modal = document.getElementById('edit-user-modal');
+    if (modal) modal.classList.remove('hidden');
+    
+    if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeEditModal = () => {
+    const modal = document.getElementById('edit-user-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+const formEditUser = document.getElementById('form-edit-user');
+if (formEditUser) {
+    formEditUser.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('edit-original-email').value;
+        const nombre = document.getElementById('edit-nombre').value.trim();
+        const area = document.getElementById('edit-area').value;
+        const pais = document.getElementById('edit-pais').value;
+        const responsable = document.getElementById('edit-responsable').value.trim() || "N/A";
+
+        showLoader("Actualizando colaborador...");
+        try {
+            await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), {
+                nombre,
+                area,
+                pais,
+                responsable
+            });
+            showNotification("Datos actualizados correctamente", "success");
+            window.closeEditModal();
+        } catch (error) {
+            showNotification("Error al actualizar datos", "error");
+            console.error(error);
+        } finally {
+            hideLoader();
+        }
+    });
+}
