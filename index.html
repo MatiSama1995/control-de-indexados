@@ -4,20 +4,214 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>CertiTrack | Gestión de Certificaciones</title>
+    
+    <!-- Librerías -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- Llama al archivo CSS externo -->
+    <!-- Tus Estilos -->
     <link rel="stylesheet" href="./assets/styles.css">
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900">
 
-    <!-- TODO EL CÓDIGO HTML ORIGINAL VA EXACTAMENTE IGUAL AQUÍ -->
-    <!-- (Mantén tu <div id="custom-confirm-modal">, <div id="login-screen">, y <div id="app-content"> con todos sus hijos exactamente como estaban en el archivo original) -->
+    <!-- MODAL DE CONFIRMACIÓN CUSTOM -->
+    <div id="custom-confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform mx-4">
+            <div class="flex items-center space-x-3 mb-4">
+                <div id="confirm-icon-bg" class="bg-red-100 p-2 rounded-full text-red-600">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800" id="confirm-title">Confirmar</h3>
+            </div>
+            <p class="text-slate-600 text-sm mb-6 whitespace-pre-line" id="confirm-message">¿Estás seguro?</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeConfirm()" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                <button id="btn-confirm-ok" class="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-md">Confirmar</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Llama al archivo App principal como módulo -->
-    <script type="module" src="./js/app.js"></script>
-</body>
-</html>
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-100 overflow-y-auto py-8">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 m-auto">
+            <div class="flex flex-col items-center mb-8">
+                <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200 mb-4">
+                    <i data-lucide="shield-check" class="text-white w-8 h-8"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">CertiTrack Login</h1>
+                <p class="text-slate-500 text-sm mt-1">Ingresa tus credenciales de administrador</p>
+            </div>
+            
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Correo Electrónico</label>
+                    <input type="email" id="username" required placeholder="usuario@coasinlogicalis.com" class="w-full p-4 bg-slate-50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Contraseña</label>
+                    <input type="password" id="password" required class="w-full p-4 bg-slate-50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+                <button type="submit" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center">
+                    Acceder al Sistema
+                </button>
+            </form>
+
+            <p id="login-error" class="text-red-500 text-xs mt-4 text-center font-bold hidden">Credenciales incorrectas.</p>
+
+            <!-- ZONA DE CONEXIÓN A BASE DE DATOS -->
+            <div class="mt-8 pt-6 border-t border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+                        <i data-lucide="database" class="w-4 h-4 mr-1"></i> Configuración Firebase
+                    </h3>
+                    <div class="flex items-center space-x-1">
+                        <div class="w-2 h-2 rounded-full bg-slate-300" id="db-indicator"></div>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase" id="db-status">En espera</span>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Project ID</label>
+                        <input type="text" value="gestion-certificaciones" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 font-mono outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div id="app-content" class="hidden">
+        <!-- Cargando -->
+        <div id="loader" class="fixed inset-0 z-50 flex items-center justify-center loading-overlay hidden">
+            <div class="flex flex-col items-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-slate-600 font-medium" id="loader-text">Procesando datos en la nube...</p>
+            </div>
+        </div>
+
+        <!-- Notificaciones -->
+        <div id="notification" class="fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-xl transform transition-transform translate-y-20 bg-white border-l-4 hidden">
+            <div class="flex items-center space-x-3">
+                <div id="notification-icon"></div>
+                <p id="notification-message" class="text-sm font-medium"></p>
+            </div>
+        </div>
+
+        <!-- Navegación Principal -->
+        <nav class="bg-white border-b sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center space-x-2">
+                        <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200">
+                            <i data-lucide="shield-check" class="text-white w-6 h-6"></i>
+                        </div>
+                        <span class="text-xl font-bold text-slate-800 tracking-tight">CertiTrack</span>
+                    </div>
+                    <div class="flex space-x-1" id="nav-tabs">
+                        <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-tab px-4 py-5 text-sm font-semibold tab-active">Dashboard</button>
+                        <button onclick="switchTab('upload')" id="btn-upload" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500 hover:text-blue-600">Subir Datos</button>
+                        <button onclick="switchTab('manage')" id="btn-manage" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500 hover:text-blue-600">Gestión Manual</button>
+                        <button onclick="switchTab('table')" id="btn-table" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500 hover:text-blue-600">Tabla Maestra</button>
+                        <button onclick="switchTab('support')" id="btn-support" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500 hover:text-blue-600">Soporte</button>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div id="main-db-status" class="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200" title="Estado de la base de datos">
+                            <div id="main-db-dot" class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            <span id="main-db-text" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Verificando...</span>
+                        </div>
+
+                        <button onclick="logout()" class="text-slate-400 hover:text-red-500 transition-colors p-2" title="Cerrar Sesión">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- DASHBOARD -->
+            <section id="view-dashboard" class="view-section space-y-6">
+                <div class="bg-white px-5 py-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-center gap-3 relative z-30 mb-6">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2 flex items-center">
+                        <i data-lucide="filter" class="w-4 h-4 mr-1"></i> Filtros
+                    </div>
+                    <div id="dash-filters-container" class="flex flex-wrap items-center gap-2 flex-1"></div>
+                    <button onclick="clearAllDashFilters()" class="text-[10px] font-bold text-slate-500 hover:text-red-600 transition-colors ml-auto flex items-center uppercase tracking-widest bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-full border border-slate-200 hover:border-red-200">
+                        <i data-lucide="x-circle" class="w-4 h-4 mr-1"></i> Limpiar Filtros
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-blue-50 rounded-bl-full -z-0"></div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest relative z-10">Total Resultados</p>
+                        <h3 class="text-3xl font-bold text-slate-800 mt-2 relative z-10" id="stat-total">0</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-green-500">
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest text-green-600">Vigentes</p>
+                        <h3 class="text-3xl font-bold text-green-600 mt-2" id="stat-active">0</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-amber-500">
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest text-amber-500">Próximos a Vencer</p>
+                        <h3 class="text-3xl font-bold text-amber-500 mt-2" id="stat-warning">0</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest text-red-600">Vencidas / Huérfanas</p>
+                        <h3 class="text-3xl font-bold text-red-600 mt-2" id="stat-expired">0</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-1 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm">
+                            <i data-lucide="activity" class="w-4 h-4 mr-2 text-indigo-500"></i> Estado Global
+                        </h4>
+                        <div class="flex-1 min-h-[220px] relative"><canvas id="chartStatus"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm">
+                            <i data-lucide="award" class="w-4 h-4 mr-2 text-blue-500"></i> Top Colaboradores Certificados
+                        </h4>
+                        <div class="flex-1 min-h-[220px] relative"><canvas id="chartColabs"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-1 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm">
+                            <i data-lucide="globe-2" class="w-4 h-4 mr-2 text-teal-500"></i> Distribución País
+                        </h4>
+                        <div class="flex-1 min-h-[220px] relative"><canvas id="chartCountries"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden flex flex-col">
+                        <div class="p-5 border-b border-red-100 bg-red-50 flex justify-between items-center">
+                            <h4 class="font-bold text-red-800 flex items-center">
+                                <i data-lucide="alert-circle" class="w-5 h-5 mr-2 text-red-600"></i> Alertas de Vencimiento
+                            </h4>
+                            <span class="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded-full" id="alerts-count">0</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-[350px] custom-scrollbar">
+                            <table class="w-full text-left border-collapse min-w-[800px]">
+                                <thead class="bg-white sticky top-0 z-10 shadow-sm text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <tr>
+                                        <th class="px-6 py-4">País</th>
+                                        <th class="px-6 py-4">Colaborador</th>
+                                        <th class="px-6 py-4">Certificación</th>
+                                        <th class="px-6 py-4 text-center">Vencimiento</th>
+                                        <th class="px-6 py-4 text-right">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-alerts-tbody" class="divide-y divide-slate-100 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+                        <div class="p-5 border-b border-slate-100 bg-slate-50">
+                            <h4 class="font-bold text-slate-800 flex items-center">
+                                <i data-lucide="list" class="w-5 h-5 mr-2 text-slate-500"></i> Resumen de Registros
+                            </h4>
+                        </div>
