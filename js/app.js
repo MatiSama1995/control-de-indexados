@@ -1,4 +1,5 @@
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, doc, setDoc, updateDoc, deleteDoc, getDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { auth, db, firestoreAppId } from './firebase-config.js';
 import { showNotification, showLoader, hideLoader, switchTab, switchManageTab, updateTopIndicator } from './ui-manager.js';
@@ -820,6 +821,51 @@ if (formEditUser) {
         } catch (error) {
             showNotification("Error al actualizar datos", "error");
             console.error(error);
+        } finally {
+            hideLoader();
+        }
+    });
+}
+
+// ==========================================
+// CREACIÓN DE USUARIOS ADMINISTRADORES
+// ==========================================
+const formCreateAdmin = document.getElementById('form-create-admin');
+if (formCreateAdmin) {
+    formCreateAdmin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('admin-email').value.toLowerCase().trim();
+        const pass = document.getElementById('admin-pass').value;
+        const rol = document.getElementById('admin-rol').value;
+
+        if (pass.length < 6) return showNotification("La contraseña debe tener al menos 6 caracteres", "error");
+
+        showLoader("Configurando accesos...");
+        try {
+            // 1. Usar una instancia secundaria para NO cerrar la sesión del admin actual
+            const secondaryApp = initializeApp(auth.app.options, `TempApp_${Date.now()}`);
+            const secondaryAuth = getAuth(secondaryApp);
+            
+            await createUserWithEmailAndPassword(secondaryAuth, email, pass);
+            await secondaryAuth.signOut(); // Limpiamos la sesión temporal
+
+            // 2. Guardar el rol y estado en Firestore
+            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'admins', email), {
+                email: email,
+                rol: rol,
+                activo: true,
+                creadoEn: new Date().toISOString()
+            });
+
+            showNotification("Administrador creado exitosamente", "success");
+            e.target.reset();
+        } catch (error) {
+            console.error(error);
+            if (error.code === 'auth/email-already-in-use') {
+                showNotification("El correo ya tiene una cuenta asignada.", "error");
+            } else {
+                showNotification("Error al crear usuario: " + error.message, "error");
+            }
         } finally {
             hideLoader();
         }
