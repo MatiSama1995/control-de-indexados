@@ -1,27 +1,29 @@
-// Añade esta función al principio del archivo
+import { db, firestoreAppId } from './firebase-config.js';
+import { doc, deleteDoc, updateDoc, writeBatch, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// --- NAVEGACIÓN DE SUB-PESTAÑAS (GESTIÓN MANUAL) ---
 export const switchSubTab = (subId) => {
     document.querySelectorAll('.sub-section').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('bg-white', 'shadow-sm', 'shadow-slate-200'));
     
-    document.getElementById(`subview-${subId}`).classList.remove('hidden');
-    document.getElementById(`subtab-${subId}`).classList.add('bg-white', 'shadow-sm', 'shadow-slate-200');
+    const targetView = document.getElementById(`subview-${subId}`);
+    const targetBtn = document.getElementById(`subtab-${subId}`);
+    
+    if (targetView) targetView.classList.remove('hidden');
+    if (targetBtn) targetBtn.classList.add('bg-white', 'shadow-sm', 'shadow-slate-200');
 };
 
-alert("¡EL CÓDIGO NUEVO ESTÁ CARGANDO!");
-console.log("UI Manager cargado correctamente");
-
-import { db, firestoreAppId } from './firebase-config.js';
-import { doc, deleteDoc, updateDoc, writeBatch, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+// --- NOTIFICACIONES ---
 export const showNotification = (msg, type) => {
     const el = document.getElementById('notification');
     if (!el) return;
-    el.className = `fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-xl bg-white border-l-4 ${type === 'success' ? 'border-green-500' : 'border-red-500'}`;
+    el.className = `fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-xl bg-white border-l-4 ${type === 'success' ? 'border-green-500' : 'border-red-500'} transition-all`;
     el.innerHTML = `<div class="font-medium text-slate-800">${msg}</div>`;
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 4000);
 };
 
+// --- NAVEGACIÓN PRINCIPAL ---
 export const switchTab = (id) => {
     document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('tab-active', 'text-blue-600'));
@@ -31,6 +33,7 @@ export const switchTab = (id) => {
     if (btn) btn.classList.add('tab-active', 'text-blue-600');
 };
 
+// --- RENDERIZADO DE TABLAS ---
 export const refreshUI = (state) => {
     const masterBody = document.getElementById('master-table-body');
     const alertsBody = document.getElementById('dash-alerts-tbody');
@@ -46,9 +49,18 @@ export const refreshUI = (state) => {
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
     let huerfanos = new Map();
 
-    // 1. Personas
+    // 1. Maestro de Personas
     state.personas.forEach(p => {
-        peopleBody.innerHTML += `<tr class="border-b"><td class="p-4"><b>${p.nombre}</b><br>${p.email}</td><td class="p-4 text-xs">${p.pais}</td><td class="p-4 text-right"><button onclick="window.toggleUserStatus('${p.email}', ${p.activo})" class="text-[10px] font-bold ${p.activo ? 'text-red-500' : 'text-green-500'}">${p.activo ? 'INHABILITAR' : 'ACTIVAR'}</button></td></tr>`;
+        peopleBody.innerHTML += `
+            <tr class="border-b hover:bg-slate-50">
+                <td class="p-4"><b>${p.nombre}</b><br><span class="text-[10px] text-slate-400">${p.email}</span></td>
+                <td class="p-4 text-xs font-bold uppercase">${p.pais} / ${p.area}</td>
+                <td class="p-4 text-right">
+                    <button onclick="window.toggleUserStatus('${p.email}', ${p.activo})" class="px-3 py-1 rounded-lg text-[10px] font-black border ${p.activo ? 'text-red-500 border-red-100 bg-red-50' : 'text-green-500 border-green-100 bg-green-50'}">
+                        ${p.activo ? 'INHABILITAR' : 'ACTIVAR'}
+                    </button>
+                </td>
+            </tr>`;
     });
 
     // 2. Certificaciones
@@ -65,66 +77,99 @@ export const refreshUI = (state) => {
             else if (vDate < now) { status = "Vencida"; col = "bg-red-100 text-red-700"; }
             else if (vDate < warningLimit) { status = "Por Vencer"; col = "bg-amber-100 text-amber-700"; }
 
-            const tr = `<tr class="border-b"><td class="p-4 font-bold text-sm">${p ? p.nombre : (c.tempName || 'Huérfano')}</td><td class="p-4 text-xs"><b>${c.marca}</b><br>${c.nombre}</td><td class="p-4 text-xs text-center">${c.vencimiento}</td><td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${col}">${status}</span></td><td class="p-4 text-right"><button onclick="window.deleteCert('${c.id}')" class="text-red-300 hover:text-red-500">Eliminar</button></td></tr>`;
+            const tr = `<tr class="border-b hover:bg-slate-50"><td class="p-4 font-bold text-sm">${p ? p.nombre : (c.tempName || 'Huérfano')}</td><td class="p-4 text-xs"><b>${c.marca}</b><br>${c.nombre}</td><td class="p-4 text-xs text-center">${c.vencimiento}</td><td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${col}">${status}</span></td><td class="p-4 text-right"><button onclick="window.deleteCert('${c.id}')" class="text-slate-300 hover:text-red-500 transition-colors">Eliminar</button></td></tr>`;
             masterBody.innerHTML += tr;
             if (status !== "Vigente") alertsBody.innerHTML += tr;
         }
     });
 
-    // 3. Excepciones (AQUÍ ESTÁ EL INPUT DEL NOMBRE)
+    // 3. Excepciones (NOMBRE SUGERIDO EDITABLE)
     huerfanos.forEach((v, k) => {
-        const idSafe = k.replace(/[.@\s]/g, '_'); // Limpiamos puntos y arrobas para que no den error en IDs
+        const idSafe = k.replace(/[.@\s]/g, '_'); 
         missingBody.innerHTML += `
             <tr class="border-b hover:bg-slate-50">
-                <td class="p-4">
-                    <input type="text" id="m-n-${idSafe}" value="${v.name}" class="w-full text-xs p-2 border rounded font-bold bg-white outline-none focus:ring-1 focus:ring-blue-500">
+                <td class="px-4 py-3">
+                    <input type="text" id="m-n-${idSafe}" value="${v.name}" class="w-full text-xs p-2 border rounded-xl font-bold bg-white focus:ring-2 focus:ring-blue-100 outline-none" placeholder="Nombre Sugerido">
                 </td>
-                <td class="p-4">
-                    <input type="email" id="m-e-${idSafe}" value="${v.email.includes('huerfano') ? '' : v.email}" class="w-full text-xs p-2 border rounded outline-none">
+                <td class="px-4 py-3">
+                    <input type="email" id="m-e-${idSafe}" value="${v.email.includes('huerfano') ? '' : v.email}" class="w-full text-xs p-2 border rounded-xl outline-none bg-slate-50 focus:bg-white" placeholder="Email...">
                 </td>
-                <td class="p-4">
-                    <select id="m-p-${idSafe}" class="text-[10px] p-2 border rounded font-bold uppercase">
-                        <option value="CHILE" ${v.country.includes('CH') ? 'selected' : ''}>CHILE</option>
-                        <option value="PERÚ" ${v.country.includes('PE') ? 'selected' : ''}>PERÚ</option>
-                        <option value="COLOMBIA" ${v.country.includes('CO') ? 'selected' : ''}>COLOMBIA</option>
+                <td class="px-4 py-3 text-center">
+                    <select id="m-p-${idSafe}" class="text-[10px] p-2 border rounded-xl font-bold uppercase">
+                        <option value="CHILE" ${v.country.includes('CH') ? 'selected' : ''}>CH</option>
+                        <option value="PERÚ" ${v.country.includes('PE') ? 'selected' : ''}>PEI</option>
+                        <option value="COLOMBIA" ${v.country.includes('CO') ? 'selected' : ''}>CO</option>
                     </select>
                 </td>
-                <td class="p-4 text-right">
-                    <button onclick="window.linkHuerfano('${idSafe}', '${k}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold">ASOCIAR</button>
+                <td class="px-4 py-3 text-center">
+                    <select id="m-a-${idSafe}" class="text-[10px] p-2 border rounded-xl font-bold uppercase">
+                        <option value="SELECCIONAR">SELECCIONAR</option>
+                        <option value="INGENIERIA">INGENIERÍA</option>
+                        <option value="COMERCIAL">COMERCIAL</option>
+                        <option value="PRE-VENTA">PRE-VENTA</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="text" id="m-r-${idSafe}" placeholder="Nombre Resp" class="w-full text-xs p-2 border rounded-xl outline-none bg-slate-50 focus:bg-white">
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <button onclick="window.linkHuerfano('${idSafe}', '${k}')" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black hover:bg-blue-700 shadow-md shadow-blue-100 transition-all">ASOCIAR</button>
                 </td>
             </tr>`;
     });
     lucide.createIcons();
 };
 
+// --- OPERACIONES DE FIREBASE ---
+
 window.deleteCert = async (id) => {
-    if (confirm("¿Borrar registro?")) await deleteDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', id));
+    if (confirm("¿Estás seguro de eliminar este registro?")) {
+        try {
+            await deleteDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', id));
+            showNotification("Registro eliminado", "success");
+        } catch (e) { showNotification("Error al eliminar", "error"); }
+    }
 };
 
 window.toggleUserStatus = async (email, estadoActual) => {
-    await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { activo: !estadoActual });
+    try {
+        await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { activo: !estadoActual });
+        showNotification("Estado de usuario actualizado", "success");
+    } catch (e) { showNotification("Error al cambiar estado", "error"); }
 };
 
 window.linkHuerfano = async (idSafe, originalKey) => {
     const nombreEditado = document.getElementById(`m-n-${idSafe}`).value.trim();
     const emailDestino = document.getElementById(`m-e-${idSafe}`).value.toLowerCase().trim();
     const paisDestino = document.getElementById(`m-p-${idSafe}`).value;
+    const areaDestino = document.getElementById(`m-a-${idSafe}`).value;
+    const responsableDestino = document.getElementById(`m-r-${idSafe}`).value;
 
-    if (!nombreEditado || !emailDestino.includes('@')) return alert("Completa los datos correctamente.");
+    if (!nombreEditado || !emailDestino.includes('@')) return alert("Por favor, ingresa un nombre y email válido.");
 
     try {
         const batch = writeBatch(db);
         const userRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', emailDestino);
         
-        batch.set(userRef, { nombre: nombreEditado, email: emailDestino, pais: paisDestino, area: "Sin definir", activo: true }, { merge: true });
+        batch.set(userRef, { 
+            nombre: nombreEditado, 
+            email: emailDestino, 
+            pais: paisDestino, 
+            area: areaDestino, 
+            responsable: responsableDestino || "N/A",
+            activo: true 
+        }, { merge: true });
 
-        // Usamos window.state porque lo hicimos global en app.js
         const afectados = window.state.certificaciones.filter(c => c.userEmail === originalKey || c.tempName === originalKey);
         afectados.forEach(c => {
-            batch.update(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', c.id), { userEmail: emailDestino, tempName: null });
+            const certRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', c.id);
+            batch.update(certRef, { userEmail: emailDestino, tempName: null });
         });
 
         await batch.commit();
-        alert("¡Vinculado correctamente!");
-    } catch (e) { console.error(e); alert("Error al vincular."); }
+        showNotification("Colaborador vinculado y registros actualizados", "success");
+    } catch (e) { 
+        console.error(e); 
+        showNotification("Error en el proceso de vinculación", "error"); 
+    }
 };
