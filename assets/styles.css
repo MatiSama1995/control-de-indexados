@@ -6,12 +6,11 @@ html, body {
     overflow-x: hidden;
     margin: 0;
     padding: 0;
+    background-color: #f8fafc; /* Un gris un poco más elegante */
 }
 
-.tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; }
-.loading-overlay { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(4px); }
+/* --- Animaciones y Scroll --- */
 .view-section { animation: fadeIn 0.3s ease-in-out; }
-
 @keyframes fadeIn { 
     from { opacity: 0; transform: translateY(10px); } 
     to { opacity: 1; transform: translateY(0); } 
@@ -20,3 +19,39 @@ html, body {
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+/* --- Mejoras Visuales para la versión Modular --- */
+
+/* Navegación más definida */
+nav {
+    background: #ffffff;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+/* Botones de navegación con más feedback */
+.nav-tab {
+    transition: all 0.2s ease;
+}
+
+.nav-tab.tab-active { 
+    border-bottom: 3px solid #2563eb; 
+    color: #2563eb; 
+    background: rgba(37, 99, 235, 0.03);
+}
+
+/* Tarjetas del Dashboard con profundidad */
+.bg-white.p-7.rounded-3xl {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    border: 1px solid #f1f5f9;
+    transition: transform 0.2s ease;
+}
+
+.bg-white.p-7.rounded-3xl:hover {
+    transform: translateY(-2px);
+}
+
+/* Overlay de carga */
+.loading-overlay { 
+    background: rgba(255, 255, 255, 0.8); 
+    backdrop-filter: blur(4px); 
+}
