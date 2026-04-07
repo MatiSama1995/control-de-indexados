@@ -75,6 +75,22 @@ let state = {
 };
 
 let activeDashFilters = { pais: null, area: null, marca: null, certificacion: null, colaborador: null };
+let filterIncompletePeople = false;
+
+window.toggleIncompleteFilter = () => {
+    filterIncompletePeople = !filterIncompletePeople;
+    const btn = document.getElementById('btn-filter-incomplete');
+    if (btn) {
+        if (filterIncompletePeople) {
+            btn.classList.add('bg-amber-100', 'text-amber-700', 'border-amber-300');
+            btn.classList.remove('bg-white', 'text-slate-500', 'border-slate-200', 'hover:bg-slate-50');
+        } else {
+            btn.classList.remove('bg-amber-100', 'text-amber-700', 'border-amber-300');
+            btn.classList.add('bg-white', 'text-slate-500', 'border-slate-200', 'hover:bg-slate-50');
+        }
+    }
+    updateUI();
+};
 let unsubscribePersonas = null;
 let unsubscribeCerts = null;
 let confirmActionCallback = null;
@@ -271,7 +287,14 @@ const updateUI = () => {
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
     let missingMap = new Map();
     
-    state.personas.filter(p => !pSearch || p.nombre.toLowerCase().includes(pSearch)).forEach(p => {
+    state.personas.filter(p => {
+        if (pSearch && !p.nombre.toLowerCase().includes(pSearch)) return false;
+        if (filterIncompletePeople) {
+            const isIncomplete = p.pais === "N/A" || p.area === "N/A" || p.area === "Sin definir" || p.responsable === "N/A" || !p.responsable;
+            if (!isIncomplete) return false;
+        }
+        return true;
+    }).forEach(p => {
         if (p.activo) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
