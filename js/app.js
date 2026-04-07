@@ -44,6 +44,10 @@ document.getElementById('tab-manage').onclick = () => UI.switchTab('manage');
 document.getElementById('tab-table').onclick = () => UI.switchTab('table');
 document.getElementById('tab-support').onclick = () => UI.switchTab('support');
 document.getElementById('btn-logout').onclick = () => signOut(auth);
+// --- 2.1 EVENTOS DE SUB-NAVEGACIÓN (GESTIÓN MANUAL) ---
+document.getElementById('subtab-new').onclick = () => UI.switchSubTab('new');
+document.getElementById('subtab-people').onclick = () => UI.switchSubTab('people');
+document.getElementById('subtab-exceptions').onclick = () => UI.switchSubTab('exceptions');
 
 // --- 3. MANEJO DE LOGIN ---
 document.getElementById('login-form').onsubmit = async (e) => {
