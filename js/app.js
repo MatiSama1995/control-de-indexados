@@ -345,13 +345,23 @@ const updateUI = () => {
         const validAreas = ["Comercial", "Pre-venta", "Ingenieria", "COE"];
         let areaOptionsHTML = `<option value="" selected disabled>Seleccione Área...</option>`;
         validAreas.forEach(a => areaOptionsHTML += `<option value="${a}">${a}</option>`);
+
+        // NUEVO: Generar lista de usuarios existentes
+        let existingUsersOptions = `<option value="">-- O Buscar Existente --</option>`;
+        state.personas.filter(p => p.activo).sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(p => {
+            existingUsersOptions += `<option value="${p.email}">${p.nombre} (${p.email})</option>`;
+        });
         
-        // AQUÍ SE AGREGA EL CAMPO DE TEXTO EDITABLE PARA EL NOMBRE
         tr.innerHTML = `
         <td class="px-6 py-3">
             <input type="text" value="${val.name}" placeholder="Nombre a Registrar" class="w-full text-xs font-bold text-slate-800 p-2 border border-blue-200 rounded outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30" id="m-n-${idSafe}">
         </td>
-        <td class="px-6 py-3"><input type="email" value="${val.email}" placeholder="Email real" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500" id="m-e-${idSafe}"></td>
+        <td class="px-6 py-3">
+            <input type="email" value="${val.email}" placeholder="Email real (Nuevo)" class="w-full text-xs p-2 mb-1 border rounded outline-none focus:ring-1 focus:ring-blue-500" id="m-e-${idSafe}">
+            <select id="m-ex-${idSafe}" class="w-full text-[10px] p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-100 font-medium text-slate-600 cursor-pointer">
+                ${existingUsersOptions}
+            </select>
+        </td>
         <td class="px-6 py-3 text-center"><select id="m-p-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${optionsHTML}</select></td>
         <td class="px-6 py-3"><select id="m-a-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${areaOptionsHTML}</select></td>
         <td class="px-6 py-3"><input type="text" placeholder="Nombre Responsable" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500" id="m-r-${idSafe}"></td>
@@ -623,41 +633,61 @@ window.disableHuerfano = async (id, nombreOriginal, originalEmail) => {
 };
 
 window.linkHuerfano = async (id, nombreOriginal) => {
-    // Rescatamos TODOS los valores de los inputs, incluyendo el nuevo de Nombre
     const nombreEl = document.getElementById(`m-n-${id}`);
     const emailEl = document.getElementById(`m-e-${id}`);
     const areaEl = document.getElementById(`m-a-${id}`);
     const respEl = document.getElementById(`m-r-${id}`);
     const paisEl = document.getElementById(`m-p-${id}`);
-    
-    const nombreFinal = nombreEl ? nombreEl.value.trim() : nombreOriginal;
-    const email = emailEl ? emailEl.value.toLowerCase().trim() : "";
-    const area = areaEl ? areaEl.value : "";
-    const responsable = respEl && respEl.value.trim() !== "" ? respEl.value.trim() : "N/A";
-    const pais = paisEl ? paisEl.value.toUpperCase() : "";
+    const existenteEl = document.getElementById(`m-ex-${id}`); // Elemento nuevo
 
-    if (!nombreFinal || nombreFinal === "") return showNotification("El nombre no puede quedar vacío", "error");
-    if (!email.includes('@') || !pais || !area) return showNotification("Faltan datos válidos", "error");
+    const existingEmail = existenteEl ? existenteEl.value : "";
     
     showLoader("Vinculando...");
     try {
-        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { 
-            nombre: nombreFinal, 
-            email, 
-            pais, 
-            area, 
-            activo: true, 
-            responsable
-        });
+        let targetEmail = "";
+
+        if (existingEmail !== "") {
+            // Se seleccionó un usuario existente de la lista
+            targetEmail = existingEmail;
+        } else {
+            // Flujo normal: creamos un nuevo usuario con los datos de los inputs
+            const nombreFinal = nombreEl ? nombreEl.value.trim() : nombreOriginal;
+            targetEmail = emailEl ? emailEl.value.toLowerCase().trim() : "";
+            const area = areaEl ? areaEl.value : "";
+            const responsable = respEl && respEl.value.trim() !== "" ? respEl.value.trim() : "N/A";
+            const pais = paisEl ? paisEl.value.toUpperCase() : "";
+
+            if (!nombreFinal || nombreFinal === "") { hideLoader(); return showNotification("El nombre no puede quedar vacío", "error"); }
+            if (!targetEmail.includes('@') || !pais || !area) { hideLoader(); return showNotification("Faltan datos válidos", "error"); }
+            
+            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', targetEmail), { 
+                nombre: nombreFinal, 
+                email: targetEmail, 
+                pais, 
+                area, 
+                activo: true, 
+                responsable
+            }, { merge: true });
+        }
+
+        // Actualizar las certificaciones apuntando al email final (nuevo o existente)
         const certs = state.certificaciones.filter(c => c.tempName === nombreOriginal || c.userEmail === `huerfano_${nombreOriginal.replace(/\s+/g, '_')}`);
+        const batch = writeBatch(db); // Optimizado con batch
         for(let cert of certs) {
-            await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { 
-                userEmail: email, 
+            batch.update(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { 
+                userEmail: targetEmail, 
                 tempName: null 
             });
         }
-        showNotification("Asociado con éxito", "success");
-    } catch (e) { showNotification("Error", "error"); } finally { hideLoader(); }
+        await batch.commit();
+
+        showNotification(existingEmail !== "" ? "Vinculado a usuario existente" : "Asociado con éxito", "success");
+    } catch (e) { 
+        showNotification("Error en la vinculación", "error"); 
+        console.error(e);
+    } finally { 
+        hideLoader(); 
+    }
 };
 
 const formPersona = document.getElementById('form-persona');
