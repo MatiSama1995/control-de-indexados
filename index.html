@@ -10,44 +10,44 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="assets/styles.css">
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-900">
+<body class="bg-slate-50 min-h-screen text-slate-900 font-sans">
 
     <div id="custom-confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden transition-opacity">
-        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform mx-4">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform mx-4 border border-slate-200">
             <div class="flex items-center space-x-3 mb-4">
                 <div id="confirm-icon-bg" class="bg-red-100 p-2 rounded-full text-red-600">
                     <i data-lucide="alert-triangle" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-800" id="confirm-title">Confirmar</h3>
+                <h3 class="text-lg font-bold text-slate-800" id="confirm-title">Confirmar Acción</h3>
             </div>
-            <p class="text-slate-600 text-sm mb-6 whitespace-pre-line" id="confirm-message">¿Estás seguro?</p>
+            <p class="text-slate-600 text-sm mb-6 whitespace-pre-line" id="confirm-message">¿Estás seguro de realizar esta operación?</p>
             <div class="flex justify-end space-x-3">
-                <button id="btn-confirm-cancel" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                <button id="btn-confirm-cancel" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200">Cancelar</button>
                 <button id="btn-confirm-ok" class="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-md">Confirmar</button>
             </div>
         </div>
     </div>
 
     <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-100 overflow-y-auto py-8">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 m-auto">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 m-auto">
             <div class="flex flex-col items-center mb-8">
-                <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200 mb-4">
-                    <i data-lucide="shield-check" class="text-white w-8 h-8"></i>
+                <div class="bg-blue-600 p-4 rounded-2xl shadow-lg shadow-blue-200 mb-4 animate-bounce">
+                    <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">CertiTrack Login</h1>
-                <p class="text-slate-500 text-sm mt-1">Ingresa tus credenciales de administrador</p>
+                <h1 class="text-3xl font-bold text-slate-800 tracking-tight">CertiTrack</h1>
+                <p class="text-slate-400 text-sm mt-1 font-medium">Panel de Administración Coasin Logicalis</p>
             </div>
             <form id="login-form" class="space-y-5">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Correo Electrónico</label>
-                    <input type="email" id="username" required placeholder="usuario@coasinlogicalis.com" class="w-full p-4 bg-slate-50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email Corporativo</label>
+                    <input type="email" id="username" required placeholder="tu.email@coasinlogicalis.com" class="w-full p-4 bg-slate-50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Contraseña</label>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contraseña</label>
                     <input type="password" id="password" required class="w-full p-4 bg-slate-50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
-                <button type="submit" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center">
-                    Acceder al Sistema
+                <button type="submit" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
+                    Ingresar al Portal <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
             </form>
             <p id="login-error" class="text-red-500 text-xs mt-4 text-center font-bold hidden"></p>
@@ -55,127 +55,190 @@
     </div>
 
     <div id="app-content" class="hidden">
-        <div id="loader" class="fixed inset-0 z-50 flex items-center justify-center loading-overlay hidden">
-            <div class="flex flex-col items-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                <p class="mt-4 text-slate-600 font-medium" id="loader-text">Procesando datos en la nube...</p>
-            </div>
-        </div>
-
-        <div id="upload-progress-modal" class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden transition-opacity">
-            <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-2xl transform transition-transform mx-4 flex flex-col max-h-[85vh]">
-                <div class="flex items-center space-x-3 mb-4 border-b pb-4 border-slate-100">
-                    <div class="bg-blue-100 p-2 rounded-xl text-blue-600"><i data-lucide="upload-cloud" class="w-6 h-6"></i></div>
+        
+        <div id="upload-progress-modal" class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden">
+            <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl mx-4 border border-slate-200">
+                <div class="flex items-center space-x-4 mb-6">
+                    <div class="bg-blue-600 p-3 rounded-2xl text-white shadow-lg"><i data-lucide="upload-cloud" class="w-6 h-6"></i></div>
                     <div>
-                        <h3 class="text-xl font-bold text-slate-800" id="upload-progress-title">Procesando Archivo...</h3>
-                        <p class="text-xs text-slate-500">Por favor no cierres esta ventana hasta que termine.</p>
+                        <h3 class="text-xl font-bold text-slate-800" id="upload-progress-title">Subiendo a Firebase...</h3>
+                        <p class="text-xs text-slate-400">Procesando registros en tiempo real.</p>
                     </div>
                 </div>
-                <div class="mb-4">
-                    <div class="flex justify-between text-xs font-bold text-slate-500 mb-2">
-                        <span id="upload-progress-text">Progreso: 0%</span>
+                <div class="mb-6">
+                    <div class="flex justify-between text-[10px] font-black text-slate-500 uppercase mb-2">
+                        <span id="upload-progress-text">Progreso</span>
                         <span id="upload-progress-count" class="text-blue-600">0 / 0</span>
                     </div>
-                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
-                        <div id="upload-progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden border p-0.5">
+                        <div id="upload-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
                 </div>
-                <div class="flex-1 overflow-hidden flex flex-col bg-slate-900 rounded-xl shadow-inner border border-slate-800">
-                    <div class="bg-slate-800 px-4 py-2 text-[10px] font-bold tracking-widest uppercase text-slate-400">Registro de Operaciones</div>
-                    <ul id="upload-progress-log" class="p-4 space-y-1 text-[11px] font-mono overflow-y-auto custom-scrollbar flex-1 h-64 text-slate-300"></ul>
+                <div class="bg-slate-900 rounded-2xl p-4 overflow-hidden shadow-inner">
+                    <ul id="upload-progress-log" class="space-y-1 text-[11px] font-mono h-48 overflow-y-auto text-blue-300 custom-scrollbar"></ul>
                 </div>
-                <div class="mt-6 flex justify-end">
-                    <button id="btn-close-upload" class="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hidden hover:bg-slate-200 transition-colors border border-slate-200">Cerrar Ventana</button>
+                <div class="mt-8 flex justify-end">
+                    <button id="btn-close-upload" class="px-8 py-3 bg-slate-900 text-white font-bold rounded-2xl hidden hover:bg-black transition-all shadow-lg">Finalizar y Cerrar</button>
                 </div>
             </div>
         </div>
 
-        <nav class="bg-white border-b sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 flex justify-between h-16 items-center">
-                <div class="flex items-center space-x-2">
-                    <div class="bg-blue-600 p-2 rounded-lg shadow-lg"><i data-lucide="shield-check" class="text-white w-6 h-6"></i></div>
-                    <span class="text-xl font-bold text-slate-800 tracking-tight">CertiTrack</span>
+        <nav class="bg-white border-b sticky top-0 z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 flex justify-between h-20 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg"><i data-lucide="shield-check" class="text-white w-7 h-7"></i></div>
+                    <div class="hidden md:block">
+                        <span class="text-2xl font-black text-slate-800 tracking-tighter block leading-none">CertiTrack</span>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Coasin Logicalis</span>
+                    </div>
                 </div>
                 <div class="flex space-x-1" id="nav-tabs">
-                    <button id="tab-dashboard" class="nav-tab px-4 py-5 text-sm font-semibold tab-active">Dashboard</button>
-                    <button id="tab-upload" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500">Subir Datos</button>
-                    <button id="tab-manage" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500">Gestión Manual</button>
-                    <button id="tab-table" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500">Tabla Maestra</button>
-                    <button id="tab-support" class="nav-tab px-4 py-5 text-sm font-semibold text-slate-500">Soporte</button>
+                    <button id="tab-dashboard" class="nav-tab px-5 py-7 text-xs font-black uppercase tracking-widest tab-active">Dashboard</button>
+                    <button id="tab-upload" class="nav-tab px-5 py-7 text-xs font-black uppercase tracking-widest text-slate-400">Subir</button>
+                    <button id="tab-manage" class="nav-tab px-5 py-7 text-xs font-black uppercase tracking-widest text-slate-400">Excepciones</button>
+                    <button id="tab-table" class="nav-tab px-5 py-7 text-xs font-black uppercase tracking-widest text-slate-400">Maestro</button>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
-                        <div id="main-db-dot" class="w-2 h-2 rounded-full bg-slate-300"></div>
-                        <span id="main-db-text" class="text-[10px] font-bold text-slate-500 uppercase">Verificando...</span>
-                    </div>
-                    <button id="btn-logout" class="text-slate-400 hover:text-red-500 transition-colors p-2"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                    <button id="btn-logout" class="bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all p-3 rounded-2xl border border-slate-100 shadow-sm"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                 </div>
             </div>
         </nav>
 
-        <main class="max-w-7xl mx-auto px-4 py-8">
-            <section id="view-dashboard" class="view-section space-y-6">
-                <div id="dash-filters-container" class="bg-white px-5 py-4 rounded-2xl shadow-sm border flex flex-wrap items-center gap-3"></div>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-blue-500"><p class="text-xs font-bold uppercase text-slate-400">Total</p><h3 id="stat-total" class="text-3xl font-bold">0</h3></div>
-                    <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-green-500"><p class="text-xs font-bold uppercase text-green-600">Vigentes</p><h3 id="stat-active" class="text-3xl font-bold">0</h3></div>
-                    <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-amber-500"><p class="text-xs font-bold uppercase text-amber-500">Por Vencer</p><h3 id="stat-warning" class="text-3xl font-bold">0</h3></div>
-                    <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-red-500"><p class="text-xs font-bold uppercase text-red-600">Vencidas</p><h3 id="stat-expired" class="text-3xl font-bold">0</h3></div>
+        <main class="max-w-7xl mx-auto px-4 py-10">
+            
+            <section id="view-dashboard" class="view-section space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white p-7 rounded-3xl border shadow-sm border-l-[6px] border-l-blue-600"><p class="text-[10px] font-black uppercase text-slate-400 mb-1">Certificaciones Totales</p><h3 id="stat-total" class="text-4xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-7 rounded-3xl border shadow-sm border-l-[6px] border-l-green-500"><p class="text-[10px] font-black uppercase text-green-600 mb-1">Vigentes</p><h3 id="stat-active" class="text-4xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-7 rounded-3xl border shadow-sm border-l-[6px] border-l-amber-400"><p class="text-[10px] font-black uppercase text-amber-500 mb-1">Por Vencer</p><h3 id="stat-warning" class="text-4xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-7 rounded-3xl border shadow-sm border-l-[6px] border-l-red-500"><p class="text-[10px] font-black uppercase text-red-600 mb-1">Vencidas / Huérfanas</p><h3 id="stat-expired" class="text-4xl font-black text-slate-800">0</h3></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-2xl border min-h-[350px]"><canvas id="chartStatus"></canvas></div>
-                    <div class="bg-white p-6 rounded-2xl border min-h-[350px]"><canvas id="chartFabricantes"></canvas></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-3xl border shadow-sm min-h-[400px]"><h4 class="text-sm font-black uppercase mb-6 text-slate-400 tracking-widest">Distribución de Estado</h4><canvas id="chartStatus"></canvas></div>
+                    <div class="bg-white p-8 rounded-3xl border shadow-sm min-h-[400px]"><h4 class="text-sm font-black uppercase mb-6 text-slate-400 tracking-widest">Fabricantes Principales</h4><canvas id="chartFabricantes"></canvas></div>
                 </div>
-                <div class="bg-white rounded-2xl border overflow-hidden">
-                    <div class="p-4 bg-red-50 border-b border-red-100 flex justify-between items-center"><h4 class="font-bold text-red-800">Alertas</h4><span id="alerts-count" class="bg-red-200 px-2 rounded-full text-xs">0</span></div>
-                    <div class="overflow-x-auto max-h-80"><table class="w-full text-left"><tbody id="dash-alerts-tbody"></tbody></table></div>
-                </div>
-            </section>
-
-            <section id="view-upload" class="view-section hidden space-y-8">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
-                    <div class="bg-white p-6 rounded-2xl border-2 border-dashed hover:border-blue-500 cursor-pointer" onclick="document.getElementById('file-personas').click()">
-                        <i data-lucide="users" class="w-10 h-10 mx-auto mb-2"></i><h4>Maestro Personas</h4><input type="file" id="file-personas" class="hidden">
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl border-2 border-dashed hover:border-red-500 cursor-pointer" onclick="document.getElementById('file-fortinet').click()">
-                        <i data-lucide="shield" class="w-10 h-10 mx-auto mb-2"></i><h4>Fortinet</h4><input type="file" id="file-fortinet" class="hidden">
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl border-2 border-dashed hover:border-indigo-500 cursor-pointer" onclick="document.getElementById('file-cisco').click()">
-                        <i data-lucide="network" class="w-10 h-10 mx-auto mb-2"></i><h4>Cisco</h4><input type="file" id="file-cisco" class="hidden">
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl border-2 border-dashed hover:border-teal-500 cursor-pointer" onclick="document.getElementById('file-general').click()">
-                        <i data-lucide="file-spreadsheet" class="w-10 h-10 mx-auto mb-2"></i><h4>Carga General</h4><input type="file" id="file-general" class="hidden">
+                <div class="bg-white rounded-3xl border shadow-sm overflow-hidden border-red-100">
+                    <div class="p-5 bg-red-50/50 border-b border-red-100 flex justify-between items-center"><h4 class="font-black text-red-800 uppercase text-xs tracking-widest">Alertas de Vencimiento Críticas</h4><span id="alerts-count" class="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black">0</span></div>
+                    <div class="overflow-x-auto max-h-96">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b">
+                                <tr><th class="px-6 py-4">Colaborador</th><th class="px-6 py-4 text-center">Certificación</th><th class="px-6 py-4 text-center">Vencimiento</th><th class="px-6 py-4 text-right">Estado</th></tr>
+                            </thead>
+                            <tbody id="dash-alerts-tbody"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
-            <section id="view-manage" class="view-section hidden space-y-6">
-                <div class="bg-white rounded-2xl border overflow-hidden">
-                    <div class="p-4 bg-slate-50 border-b font-bold flex justify-between">Excepciones <span id="missing-badge" class="bg-red-500 text-white px-2 rounded-full text-xs hidden">0</span></div>
-                    <table class="w-full text-left border-collapse"><tbody id="missing-people-body"></tbody></table>
-                </div>
-                <div class="bg-white rounded-2xl border overflow-hidden">
-                    <div class="p-4 bg-slate-50 border-b font-bold">Listado de Colaboradores</div>
-                    <table class="w-full text-left border-collapse"><tbody id="people-list-body"></tbody></table>
+            <section id="view-upload" class="view-section hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div onclick="document.getElementById('file-personas').click()" class="bg-white p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 hover:border-blue-500 hover:bg-blue-50/30 cursor-pointer transition-all group flex flex-col items-center text-center">
+                        <div class="bg-blue-100 text-blue-600 p-5 rounded-3xl mb-4 group-hover:scale-110 transition-transform"><i data-lucide="users" class="w-10 h-10"></i></div>
+                        <h4 class="font-black text-slate-800 mb-1">Maestro Personas</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sincronizar Colaboradores</p>
+                        <input type="file" id="file-personas" class="hidden" accept=".xlsx, .xls">
+                    </div>
+                    <div onclick="document.getElementById('file-cisco').click()" class="bg-white p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/30 cursor-pointer transition-all group flex flex-col items-center text-center">
+                        <div class="bg-indigo-100 text-indigo-600 p-5 rounded-3xl mb-4 group-hover:scale-110 transition-transform"><i data-lucide="network" class="w-10 h-10"></i></div>
+                        <h4 class="font-black text-slate-800 mb-1">Cisco</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Reporte por Site ID</p>
+                        <input type="file" id="file-cisco" class="hidden" accept=".xlsx, .xls">
+                    </div>
+                    <div onclick="document.getElementById('file-fortinet').click()" class="bg-white p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 hover:border-red-500 hover:bg-red-50/30 cursor-pointer transition-all group flex flex-col items-center text-center">
+                        <div class="bg-red-100 text-red-600 p-5 rounded-3xl mb-4 group-hover:scale-110 transition-transform"><i data-lucide="shield" class="w-10 h-10"></i></div>
+                        <h4 class="font-black text-slate-800 mb-1">Fortinet</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Reporte NSE Training</p>
+                        <input type="file" id="file-fortinet" class="hidden" accept=".xlsx, .xls">
+                    </div>
+                    <div onclick="document.getElementById('file-general').click()" class="bg-white p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 cursor-pointer transition-all group flex flex-col items-center text-center">
+                        <div class="bg-teal-100 text-teal-600 p-5 rounded-3xl mb-4 group-hover:scale-110 transition-transform"><i data-lucide="file-spreadsheet" class="w-10 h-10"></i></div>
+                        <h4 class="font-black text-slate-800 mb-1">Carga General</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Plantilla Multi-marca</p>
+                        <input type="file" id="file-general" class="hidden" accept=".xlsx, .xls">
+                    </div>
                 </div>
             </section>
 
-            <section id="view-table" class="view-section hidden space-y-4">
-                <div class="flex gap-4"><input type="text" id="table-search" placeholder="Buscar..." class="flex-1 p-3 border rounded-xl"><button id="btn-export" class="bg-green-600 text-white px-6 rounded-xl font-bold">Exportar</button></div>
-                <div class="bg-white rounded-2xl border overflow-hidden"><table class="w-full text-left"><tbody id="master-table-body"></tbody></table></div>
+            <section id="view-manage" class="view-section hidden space-y-8">
+                <div class="bg-white rounded-3xl border shadow-sm overflow-hidden border-blue-100">
+                    <div class="p-6 border-b bg-blue-50/50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-black text-slate-800 text-sm tracking-tight">Excepciones de Identidad (Huérfanos)</h4>
+                            <p class="text-[10px] text-blue-600 font-bold uppercase tracking-widest mt-0.5">Certificaciones sin dueño asignado</p>
+                        </div>
+                        <span id="missing-badge" class="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black hidden">0</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b">
+                                <tr>
+                                    <th class="px-6 py-4 w-1/4">Nombre Detectado (Editable)</th>
+                                    <th class="px-6 py-4 w-1/4">Email Sugerido</th>
+                                    <th class="px-6 py-4 text-center">País</th>
+                                    <th class="px-6 py-4 text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="missing-people-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+                    <div class="p-6 border-b bg-slate-50"><h4 class="font-black text-slate-800 text-sm tracking-tight">Listado Oficial de Colaboradores</h4></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b">
+                                <tr><th class="px-6 py-4">Colaborador</th><th class="px-6 py-4">Ubicación / Área</th><th class="px-6 py-4 text-right">Gestión</th></tr>
+                            </thead>
+                            <tbody id="people-list-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-table" class="view-section hidden space-y-6">
+                <div class="flex gap-4">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+                        <input type="text" id="table-search" placeholder="Filtrar por nombre, marca o certificación..." class="w-full p-4 pl-12 bg-white border rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+                    <button id="btn-export" class="bg-green-600 hover:bg-green-700 text-white px-8 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-green-100"><i data-lucide="download" class="w-5 h-5"></i> Exportar</button>
+                </div>
+                <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b">
+                            <tr><th class="px-6 py-4">Propietario</th><th class="px-6 py-4">Certificación</th><th class="px-6 py-4 text-center">Vencimiento</th><th class="px-6 py-4 text-center">Estado</th><th class="px-6 py-4 text-right">Acción</th></tr>
+                        </thead>
+                        <tbody id="master-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="view-support" class="view-section hidden">
-                <div class="bg-white p-8 rounded-2xl border space-y-4">
-                    <h4 class="font-bold text-red-600">Eliminación Masiva</h4>
-                    <select id="support-brand-select" class="w-full p-3 border rounded-xl"></select>
-                    <button id="btn-delete-brand" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold">Borrar Registros</button>
+                <div class="max-w-2xl bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-6 border-red-50 mx-auto">
+                    <div class="flex items-center gap-4 text-red-600 mb-4">
+                        <div class="bg-red-100 p-3 rounded-2xl"><i data-lucide="shield-alert" class="w-8 h-8"></i></div>
+                        <div>
+                            <h4 class="text-xl font-black tracking-tight">Herramientas de Limpieza</h4>
+                            <p class="text-xs text-red-400 font-bold uppercase">Uso exclusivo de administradores</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Seleccionar Marca para Borrado Masivo</label>
+                        <select id="support-brand-select" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all">
+                            <option value="">-- Seleccionar Marca --</option>
+                            <option value="Cisco">Cisco</option>
+                            <option value="Fortinet">Fortinet</option>
+                        </select>
+                    </div>
+                    <button id="btn-delete-brand" class="w-full py-5 bg-red-600 text-white rounded-2xl font-black hover:bg-red-700 transition-all shadow-lg shadow-red-100">ELIMINAR TODOS LOS REGISTROS</button>
+                    <p class="text-[9px] text-center text-slate-400 font-bold uppercase tracking-tighter">Esta acción no se puede deshacer. Se borrarán todos los certificados de la marca seleccionada.</p>
                 </div>
             </section>
         </main>
     </div>
 
-    <div id="notification" class="fixed bottom-4 right-4 z-50 p-4 rounded-xl shadow-xl hidden transition-all"></div>
+    <div id="notification" class="fixed bottom-6 right-6 z-50 p-5 rounded-2xl shadow-2xl hidden transform transition-all translate-y-0 flex items-center gap-3"></div>
 
     <script type="module" src="js/app.js"></script>
 </body>
