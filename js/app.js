@@ -333,9 +333,16 @@ const updateUI = () => {
         table.appendChild(tr);
     });
 
+    // GENERACIÓN DE OPCIONES DE USUARIOS EXISTENTES
+    let existingUsersOptions = `<option value="">➕ Crear como nuevo colaborador</option>`;
+    state.personas.filter(p => p.activo).sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(p => {
+        existingUsersOptions += `<option value="${p.email}">${p.nombre} (${p.email})</option>`;
+    });
+
     missingMap.forEach((val, key) => {
         const idSafe = key.replace(/\s+/g, '_');
         const tr = document.createElement('tr');
+        
         const validCountries = ["CHILE", "PERÚ", "COLOMBIA"];
         const detected = val.detectedCountry ? val.detectedCountry.toUpperCase() : "";
         const isDetectedValid = validCountries.includes(detected);
@@ -346,16 +353,24 @@ const updateUI = () => {
         let areaOptionsHTML = `<option value="" selected disabled>Seleccione Área...</option>`;
         validAreas.forEach(a => areaOptionsHTML += `<option value="${a}">${a}</option>`);
         
-        // AQUÍ SE AGREGA EL CAMPO DE TEXTO EDITABLE PARA EL NOMBRE
         tr.innerHTML = `
-        <td class="px-6 py-3">
-            <input type="text" value="${val.name}" placeholder="Nombre a Registrar" class="w-full text-xs font-bold text-slate-800 p-2 border border-blue-200 rounded outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30" id="m-n-${idSafe}">
+        <td class="px-6 py-3 align-top">
+            <div class="mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detectado: <span class="text-slate-800">${val.name}</span></div>
+            <select id="m-exist-${idSafe}" class="w-full max-w-[200px] truncate text-xs p-2 border border-blue-300 rounded outline-none mb-2 bg-blue-50 text-blue-700 font-bold cursor-pointer transition-colors hover:bg-blue-100" onchange="window.toggleHuerfanoMode('${idSafe}')">
+                ${existingUsersOptions}
+            </select>
+            <input type="text" value="${val.name}" placeholder="Nombre a Registrar" class="w-full text-xs font-bold text-slate-800 p-2 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500 transition-opacity" id="m-n-${idSafe}">
         </td>
-        <td class="px-6 py-3"><input type="email" value="${val.email}" placeholder="Email real" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500" id="m-e-${idSafe}"></td>
-        <td class="px-6 py-3 text-center"><select id="m-p-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${optionsHTML}</select></td>
-        <td class="px-6 py-3"><select id="m-a-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${areaOptionsHTML}</select></td>
-        <td class="px-6 py-3"><input type="text" placeholder="Nombre Responsable" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500" id="m-r-${idSafe}"></td>
-        <td class="px-6 py-3 text-right"><div class="flex justify-end space-x-2"><button onclick="window.disableHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}', '${val.email}')" class="bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-[10px] font-bold hover:bg-red-100 hover:text-red-600 transition-colors">Inhabilitar</button><button onclick="window.linkHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-colors shadow-sm">Asociar</button></div></td>`;
+        <td class="px-6 py-3 align-top"><input type="email" value="${val.email}" placeholder="Email real" class="w-full text-xs p-2 border rounded outline-none transition-opacity" id="m-e-${idSafe}"></td>
+        <td class="px-6 py-3 align-top text-center"><select id="m-p-${idSafe}" class="w-full text-xs p-2 border rounded outline-none bg-slate-50 uppercase font-bold text-slate-600 transition-opacity cursor-pointer">${optionsHTML}</select></td>
+        <td class="px-6 py-3 align-top"><select id="m-a-${idSafe}" class="w-full text-xs p-2 border rounded outline-none bg-slate-50 uppercase font-bold text-slate-600 transition-opacity cursor-pointer">${areaOptionsHTML}</select></td>
+        <td class="px-6 py-3 align-top"><input type="text" placeholder="Nombre Responsable" class="w-full text-xs p-2 border rounded outline-none transition-opacity" id="m-r-${idSafe}"></td>
+        <td class="px-6 py-3 align-top text-right">
+            <div class="flex flex-col space-y-2 justify-end">
+                <button onclick="window.linkHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-colors shadow-sm">Asociar</button>
+                <button onclick="window.disableHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}', '${val.email}')" class="bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-[10px] font-bold hover:bg-red-100 hover:text-red-600 transition-colors">Inhabilitar</button>
+            </div>
+        </td>`;
         if(missTable) missTable.appendChild(tr);
     });
 
@@ -581,130 +596,4 @@ window.deleteCertificationsByBrand = async () => {
     const brandSelect = document.getElementById('support-brand-select');
     if(!brandSelect) return;
     const brand = brandSelect.value;
-    if (!brand) return showNotification("Selecciona una marca primero", "error");
-    const certsToDelete = state.certificaciones.filter(c => c.marca === brand);
-    const total = certsToDelete.length;
-    if (total === 0) return showNotification("No hay registros", "error");
-    window.showConfirm("Eliminación Masiva", `Se eliminarán ${total} registros de "${brand}".`, async () => {
-        const btnDelete = document.getElementById('btn-delete-brand');
-        if(btnDelete) { btnDelete.disabled = true; btnDelete.classList.add('opacity-50'); }
-        const chunkSize = 20; let deletedCount = 0;
-        for (let i = 0; i < total; i += chunkSize) {
-            const chunk = certsToDelete.slice(i, i + chunkSize);
-            const batch = writeBatch(db);
-            chunk.forEach(cert => batch.delete(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id)));
-            try { await batch.commit(); deletedCount += chunk.length; } 
-            catch (error) { showNotification("Error al eliminar", "error"); break; }
-        }
-        showNotification(`Se eliminaron ${deletedCount} registros.`, "success");
-        if(btnDelete) { btnDelete.disabled = false; btnDelete.classList.remove('opacity-50'); }
-    });
-};
-
-// ==========================================
-// NUEVAS FUNCIONES EDITABLES PARA HUÉRFANOS
-// ==========================================
-window.disableHuerfano = async (id, nombreOriginal, originalEmail) => {
-    // Leemos el nombre desde el input por si lo editaron
-    const nombreEl = document.getElementById(`m-n-${id}`);
-    const nombreFinal = nombreEl ? nombreEl.value.trim() : nombreOriginal;
-
-    const emailToUse = originalEmail && originalEmail.trim() !== "" ? originalEmail : `huerfano_${nombreFinal.replace(/\s+/g, '_').toLowerCase()}@inactivo.local`;
-    window.showConfirm("Inhabilitar", `¿Deseas inhabilitar a "${nombreFinal}"?`, async () => {
-        showLoader("Inhabilitando...");
-        try {
-            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', emailToUse), { nombre: nombreFinal, email: emailToUse, pais: "N/A", area: "Sin definir", activo: false, responsable: "N/A" });
-            const certs = state.certificaciones.filter(c => c.tempName === nombreOriginal || c.userEmail === originalEmail || c.userEmail === `huerfano_${nombreOriginal.replace(/\s+/g, '_')}`);
-            const batch = writeBatch(db);
-            certs.forEach(cert => batch.update(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { userEmail: emailToUse, tempName: null }));
-            await batch.commit(); showNotification("Inhabilitado", "success");
-        } catch (e) { showNotification("Error", "error"); } finally { hideLoader(); }
-    });
-};
-
-window.linkHuerfano = async (id, nombreOriginal) => {
-    // Rescatamos TODOS los valores de los inputs, incluyendo el nuevo de Nombre
-    const nombreEl = document.getElementById(`m-n-${id}`);
-    const emailEl = document.getElementById(`m-e-${id}`);
-    const areaEl = document.getElementById(`m-a-${id}`);
-    const respEl = document.getElementById(`m-r-${id}`);
-    const paisEl = document.getElementById(`m-p-${id}`);
-    
-    const nombreFinal = nombreEl ? nombreEl.value.trim() : nombreOriginal;
-    const email = emailEl ? emailEl.value.toLowerCase().trim() : "";
-    const area = areaEl ? areaEl.value : "";
-    const responsable = respEl && respEl.value.trim() !== "" ? respEl.value.trim() : "N/A";
-    const pais = paisEl ? paisEl.value.toUpperCase() : "";
-
-    if (!nombreFinal || nombreFinal === "") return showNotification("El nombre no puede quedar vacío", "error");
-    if (!email.includes('@') || !pais || !area) return showNotification("Faltan datos válidos", "error");
-    
-    showLoader("Vinculando...");
-    try {
-        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { 
-            nombre: nombreFinal, 
-            email, 
-            pais, 
-            area, 
-            activo: true, 
-            responsable
-        });
-        const certs = state.certificaciones.filter(c => c.tempName === nombreOriginal || c.userEmail === `huerfano_${nombreOriginal.replace(/\s+/g, '_')}`);
-        for(let cert of certs) {
-            await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { 
-                userEmail: email, 
-                tempName: null 
-            });
-        }
-        showNotification("Asociado con éxito", "success");
-    } catch (e) { showNotification("Error", "error"); } finally { hideLoader(); }
-};
-
-const formPersona = document.getElementById('form-persona');
-if(formPersona) {
-    formPersona.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('p-email').value.toLowerCase().trim();
-        const pais = document.getElementById('p-pais').value;
-        if (!pais) return showNotification("Selecciona el País", "error");
-        showLoader("Guardando...");
-        try {
-            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { nombre: document.getElementById('p-nombre').value, email, area: document.getElementById('p-area').value || "N/A", pais, responsable: document.getElementById('p-responsable').value || "N/A", activo: true });
-            showNotification("Colaborador añadido", "success"); e.target.reset();
-        } catch (error) { showNotification("Error", "error"); } finally { hideLoader(); }
-    });
-}
-
-const formCert = document.getElementById('form-cert');
-if(formCert) {
-    formCert.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = Math.random().toString(36).substr(2, 9);
-        showLoader("Guardando...");
-        try {
-            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', id), { userEmail: document.getElementById('c-persona').value, marca: document.getElementById('c-marca').value, nombre: document.getElementById('c-nombre').value, vencimiento: document.getElementById('c-vence').value });
-            showNotification("Certificación vinculada", "success"); e.target.reset();
-        } catch (error) { showNotification("Error", "error"); } finally { hideLoader(); }
-    });
-}
-
-window.exportToExcel = () => {
-    const now = new Date(); now.setHours(0, 0, 0, 0); 
-    const warningLimit = new Date(); warningLimit.setDate(new Date().getDate() + 90);
-    const dataToExport = state.certificaciones.reduce((acc, c) => {
-        const p = state.personas.find(per => per.email === c.userEmail);
-        if (!p || !p.activo || new Date(c.vencimiento) < now) return acc;
-        acc.push({ "Colaborador": p.nombre, "Email": p.email, "País": p.pais, "Área": p.area, "Marca": c.marca, "Certificación": c.nombre, "Vencimiento": c.vencimiento, "Responsable": p.responsable, "Estado": (new Date(c.vencimiento) < warningLimit) ? "Por Vencer" : "Vigente" });
-        return acc;
-    }, []);
-    if (dataToExport.length === 0) return showNotification("No hay datos para exportar", "error");
-    const ws = window.XLSX.utils.json_to_sheet(dataToExport);
-    const wb = window.XLSX.utils.book_new(); window.XLSX.utils.book_append_sheet(wb, ws, "Certificaciones_Vigentes");
-    window.XLSX.writeFile(wb, "Reporte_CertiTrack_Vigentes.xlsx");
-};
-
-const tableSearch = document.getElementById('table-search');
-if(tableSearch) tableSearch.addEventListener('input', () => updateUI());
-
-const peopleSearch = document.getElementById('people-search');
-if(peopleSearch) peopleSearch.addEventListener('input', () => updateUI());
+    if (!brand) return showNotification("Selecciona una ma
