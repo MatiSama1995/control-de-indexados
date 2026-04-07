@@ -24,50 +24,108 @@ const filterConfigs = [
     { id: 'colaborador', label: 'Colaborador', search: true }
 ];
 
-// INICIALIZACIÓN DE ICONOS (Ejecución inmediata para módulos)
+// INICIALIZACIÓN DE ICONOS
 lucide.createIcons();
-setTimeout(() => lucide.createIcons(), 200); // Respaldo por si la red es lenta
+setTimeout(() => lucide.createIcons(), 200);
 
-// EXPONER FUNCIONES DE UI AL WINDOW (Para el HTML)
+// EXPONER FUNCIONES DE UI AL WINDOW (Para que el HTML pueda llamarlas)
 window.switchTab = switchTab;
 window.switchManageTab = switchManageTab;
 
 // MODAL DE CONFIRMACIÓN
 window.showConfirm = (title, message, onConfirm, okText = "Confirmar", isDanger = true) => {
-    document.getElementById('confirm-title').innerText = title;
-    document.getElementById('confirm-message').innerText = message;
-    
+    const titleEl = document.getElementById('confirm-title');
+    const msgEl = document.getElementById('confirm-message');
     const btnOk = document.getElementById('btn-confirm-ok');
     const iconBg = document.getElementById('confirm-icon-bg');
+    const modal = document.getElementById('custom-confirm-modal');
     
-    btnOk.innerText = okText;
-    if (isDanger) {
-        btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-md";
-        iconBg.className = "bg-red-100 p-2 rounded-full text-red-600";
-    } else {
-        btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md";
-        iconBg.className = "bg-blue-100 p-2 rounded-full text-blue-600";
+    if(titleEl) titleEl.innerText = title;
+    if(msgEl) msgEl.innerText = message;
+    
+    if(btnOk) {
+        btnOk.innerText = okText;
+        if (isDanger) {
+            btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-md";
+            if(iconBg) iconBg.className = "bg-red-100 p-2 rounded-full text-red-600";
+        } else {
+            btnOk.className = "px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md";
+            if(iconBg) iconBg.className = "bg-blue-100 p-2 rounded-full text-blue-600";
+        }
     }
 
     confirmActionCallback = onConfirm;
-    document.getElementById('custom-confirm-modal').classList.remove('hidden');
+    if(modal) modal.classList.remove('hidden');
 };
 
 window.closeConfirm = () => {
-    document.getElementById('custom-confirm-modal').classList.add('hidden');
+    const modal = document.getElementById('custom-confirm-modal');
+    if(modal) modal.classList.add('hidden');
     confirmActionCallback = null;
 };
 
-document.getElementById('btn-confirm-ok')?.addEventListener('click', () => {
-    if (confirmActionCallback) confirmActionCallback();
-    window.closeConfirm();
-});
+const btnConfirmOk = document.getElementById('btn-confirm-ok');
+if(btnConfirmOk) {
+    btnConfirmOk.addEventListener('click', () => {
+        if (confirmActionCallback) confirmActionCallback();
+        window.closeConfirm();
+    });
+}
 
-// AUTENTICACIÓN
+// LOGICA DE LOGIN EXPUESTA AL WINDOW
+window.handleLogin = async () => {
+    const emailEl = document.getElementById('username');
+    const passEl = document.getElementById('password');
+    const btn = document.querySelector('#login-form button[type="submit"]');
+
+    if(!emailEl || !passEl || !btn) return;
+
+    const email = emailEl.value;
+    const pass = passEl.value;
+
+    const originalText = btn.innerText;
+    btn.innerText = "Verificando Permisos...";
+    btn.disabled = true;
+
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        showNotification("Sesión iniciada correctamente", "success");
+    } catch (error) {
+        const errorMsg = document.getElementById('login-error');
+        if(errorMsg) {
+            if (error.code === 'auth/invalid-credential') {
+                errorMsg.innerText = "Correo o contraseña incorrectos.";
+            } else {
+                errorMsg.innerText = "Error: " + error.message;
+            }
+            errorMsg.classList.remove('hidden');
+            setTimeout(() => errorMsg.classList.add('hidden'), 4000);
+        }
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
+
+window.logout = () => {
+    window.showConfirm("Cerrar Sesión", "¿Deseas cerrar la sesión segura de CertiTrack?", async () => {
+        await signOut(auth);
+        const userEl = document.getElementById('username');
+        const passEl = document.getElementById('password');
+        if(userEl) userEl.value = '';
+        if(passEl) passEl.value = '';
+        showNotification("Sesión cerrada", "success");
+    }, "Cerrar Sesión", false);
+};
+
+// AUTENTICACIÓN Y LISTENERS BD
 window.addEventListener('online', () => updateTopIndicator(auth.currentUser !== null));
 window.addEventListener('offline', () => updateTopIndicator(false));
 
 onAuthStateChanged(auth, async (user) => {
+    const appContent = document.getElementById('app-content');
+    const loginScreen = document.getElementById('login-screen');
+
     if (user) {
         updateTopIndicator(true);
         const adminRef = doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'admins', user.email);
@@ -79,59 +137,22 @@ onAuthStateChanged(auth, async (user) => {
         }
 
         if (adminSnap.exists() && adminSnap.data().activo) {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-content').classList.remove('hidden');
+            if(loginScreen) loginScreen.classList.add('hidden');
+            if(appContent) appContent.classList.remove('hidden');
             startDatabaseListeners();
         } else {
             await signOut(auth);
             showNotification("Tu cuenta no tiene privilegios de administrador.", "error");
         }
     } else {
-        document.getElementById('app-content').classList.add('hidden');
-        document.getElementById('login-screen').classList.remove('hidden');
+        if(appContent) appContent.classList.add('hidden');
+        if(loginScreen) loginScreen.classList.remove('hidden');
         updateTopIndicator(false);
         if (unsubscribePersonas) unsubscribePersonas();
         if (unsubscribeCerts) unsubscribeCerts();
     }
 });
 
-window.handleLogin = async () => {
-    const email = document.getElementById('username').value;
-    const pass = document.getElementById('password').value;
-    const btn = document.querySelector('#login-form button[type="submit"]');
-
-    const originalText = btn.innerText;
-    btn.innerText = "Verificando Permisos...";
-    btn.disabled = true;
-
-    try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        showNotification("Sesión iniciada correctamente", "success");
-    } catch (error) {
-        const errorMsg = document.getElementById('login-error');
-        if (error.code === 'auth/invalid-credential') {
-            errorMsg.innerText = "Correo o contraseña incorrectos.";
-        } else {
-            errorMsg.innerText = "Error: " + error.message;
-        }
-        errorMsg.classList.remove('hidden');
-        setTimeout(() => errorMsg.classList.add('hidden'), 4000);
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
-    }
-};
-
-window.logout = () => {
-    window.showConfirm("Cerrar Sesión", "¿Deseas cerrar la sesión segura de CertiTrack?", async () => {
-        await signOut(auth);
-        document.getElementById('username').value = '';
-        document.getElementById('password').value = '';
-        showNotification("Sesión cerrada", "success");
-    }, "Cerrar Sesión", false);
-};
-
-// LISTENERS BD
 const startDatabaseListeners = () => {
     unsubscribePersonas = onSnapshot(collection(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas'), (snap) => {
         state.personas = snap.docs.map(d => ({ email: d.id, ...d.data() }));
@@ -183,7 +204,8 @@ window.toggleFilterMenu = (key) => {
     document.querySelectorAll('.filter-dropdown-menu').forEach(menu => {
         if (menu.id !== `menu-${key}`) menu.classList.add('hidden');
     });
-    document.getElementById(`menu-${key}`).classList.toggle('hidden');
+    const menuEl = document.getElementById(`menu-${key}`);
+    if(menuEl) menuEl.classList.toggle('hidden');
 };
 
 window.filterDropdownSearch = (inputEl, listId) => {
@@ -199,7 +221,8 @@ window.filterDropdownSearch = (inputEl, listId) => {
 window.setDashFilter = (key, value) => {
     activeDashFilters[key] = value;
     renderDashboard();
-    document.getElementById(`menu-${key}`)?.classList.add('hidden');
+    const menuEl = document.getElementById(`menu-${key}`);
+    if(menuEl) menuEl.classList.add('hidden');
 };
 
 window.clearAllDashFilters = () => {
@@ -220,10 +243,17 @@ const updateUI = () => {
     const peopleTable = document.getElementById('people-list-body');
     const inactiveTable = document.getElementById('inactive-people-body');
     if(!table) return;
-    const search = document.getElementById('table-search')?.value.toLowerCase() || "";
-    const pSearch = document.getElementById('people-search')?.value.toLowerCase() || "";
-    table.innerHTML = ''; missTable.innerHTML = ''; peopleTable.innerHTML = '';
+    
+    const searchEl = document.getElementById('table-search');
+    const pSearchEl = document.getElementById('people-search');
+    const search = searchEl ? searchEl.value.toLowerCase() : "";
+    const pSearch = pSearchEl ? pSearchEl.value.toLowerCase() : "";
+    
+    table.innerHTML = ''; 
+    if(missTable) missTable.innerHTML = ''; 
+    if(peopleTable) peopleTable.innerHTML = '';
     if(inactiveTable) inactiveTable.innerHTML = '';
+    
     const now = new Date();
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
     let missingMap = new Map();
@@ -241,9 +271,9 @@ const updateUI = () => {
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-green-100 text-green-700">Activo</span>
                 </td>
                 <td class="px-6 py-3 text-right">
-                    <button onclick="toggleUser('${p.email}', true)" class="text-xs font-bold text-red-500 hover:text-red-700">Inhabilitar</button>
+                    <button onclick="window.toggleUser('${p.email}', true)" class="text-xs font-bold text-red-500 hover:text-red-700">Inhabilitar</button>
                 </td>`;
-            peopleTable.appendChild(tr);
+            if(peopleTable) peopleTable.appendChild(tr);
         } else {
             if (inactiveTable) {
                 const trInact = document.createElement('tr');
@@ -253,7 +283,7 @@ const updateUI = () => {
                     <td class="px-6 py-4 text-xs text-slate-500 font-mono">${p.email}</td>
                     <td class="px-6 py-4 text-xs text-slate-500 text-center uppercase">${p.pais}</td>
                     <td class="px-6 py-4 text-right">
-                        <button onclick="toggleUser('${p.email}', false)" class="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-green-200 transition-colors shadow-sm"><i data-lucide="refresh-cw" class="w-3 h-3 inline-block mr-1"></i> Reactivar</button>
+                        <button onclick="window.toggleUser('${p.email}', false)" class="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-green-200 transition-colors shadow-sm"><i data-lucide="refresh-cw" class="w-3 h-3 inline-block mr-1"></i> Reactivar</button>
                     </td>`;
                 inactiveTable.appendChild(trInact);
             }
@@ -286,7 +316,7 @@ const updateUI = () => {
         <td class="px-6 py-4 text-[10px] uppercase"><div>${p ? p.pais : (c.detectedCountry || '-')}</div><div class="text-slate-400">${p ? p.area : '-'}</div></td>
         <td class="px-6 py-4 text-xs font-medium text-center">${c.vencimiento}</td>
         <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${stCol}">${stTxt}</span></td>
-        <td class="px-6 py-4 text-right"><button onclick="removeCert('${c.id}')" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`;
+        <td class="px-6 py-4 text-right"><button onclick="window.removeCert('${c.id}')" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`;
         table.appendChild(tr);
     });
 
@@ -308,8 +338,8 @@ const updateUI = () => {
         <td class="px-6 py-3 text-center"><select id="m-p-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${optionsHTML}</select></td>
         <td class="px-6 py-3"><select id="m-a-${idSafe}" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 uppercase font-bold text-slate-600 cursor-pointer">${areaOptionsHTML}</select></td>
         <td class="px-6 py-3"><input type="text" placeholder="Nombre Responsable" class="w-full text-xs p-2 border rounded outline-none focus:ring-1 focus:ring-blue-500" id="m-r-${idSafe}"></td>
-        <td class="px-6 py-3 text-right"><div class="flex justify-end space-x-2"><button onclick="disableHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}', '${val.email}')" class="bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-[10px] font-bold hover:bg-red-100 hover:text-red-600 transition-colors">Inhabilitar</button><button onclick="linkHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-colors shadow-sm">Asociar</button></div></td>`;
-        missTable.appendChild(tr);
+        <td class="px-6 py-3 text-right"><div class="flex justify-end space-x-2"><button onclick="window.disableHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}', '${val.email}')" class="bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-[10px] font-bold hover:bg-red-100 hover:text-red-600 transition-colors">Inhabilitar</button><button onclick="window.linkHuerfano('${idSafe}', '${val.name.replace(/'/g, "\\'")}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-colors shadow-sm">Asociar</button></div></td>`;
+        if(missTable) missTable.appendChild(tr);
     });
 
     if (missTable && missTable.children.length === 0) missTable.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay registros huérfanos pendientes.</td></tr>`;
@@ -427,13 +457,21 @@ const renderDashboard = () => {
         }
     });
 
-    document.getElementById('stat-total').innerText = stats.total;
-    document.getElementById('stat-active').innerText = stats.active;
-    document.getElementById('stat-warning').innerText = stats.warning;
-    document.getElementById('stat-expired').innerText = stats.expired;
-    document.getElementById('alerts-count').innerText = alertsCount;
-    document.getElementById('dash-alerts-tbody').innerHTML = alertsHTML || `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay alertas de vencimiento.</td></tr>`;
-    document.getElementById('dash-general-tbody').innerHTML = generalHTML || `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 text-sm italic">No se encontraron registros.</td></tr>`;
+    const statTotal = document.getElementById('stat-total');
+    const statActive = document.getElementById('stat-active');
+    const statWarning = document.getElementById('stat-warning');
+    const statExpired = document.getElementById('stat-expired');
+    const alertsCountEl = document.getElementById('alerts-count');
+    const dashAlertsTbody = document.getElementById('dash-alerts-tbody');
+    const dashGeneralTbody = document.getElementById('dash-general-tbody');
+
+    if(statTotal) statTotal.innerText = stats.total;
+    if(statActive) statActive.innerText = stats.active;
+    if(statWarning) statWarning.innerText = stats.warning;
+    if(statExpired) statExpired.innerText = stats.expired;
+    if(alertsCountEl) alertsCountEl.innerText = alertsCount;
+    if(dashAlertsTbody) dashAlertsTbody.innerHTML = alertsHTML || `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay alertas de vencimiento.</td></tr>`;
+    if(dashGeneralTbody) dashGeneralTbody.innerHTML = generalHTML || `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 text-sm italic">No se encontraron registros.</td></tr>`;
 
     renderCharts(chartDataStatus, chartDataColabs, chartDataCountries);
 
@@ -454,18 +492,18 @@ const renderDashboard = () => {
 
             filtersHTML += `<div class="relative filter-dropdown-container">
                 <div class="flex items-center border rounded-full text-[11px] font-medium transition-all ${pillClass}">
-                    <div class="px-3 py-1.5 flex items-center gap-1.5 cursor-pointer" onclick="toggleFilterMenu('${config.id}')">
+                    <div class="px-3 py-1.5 flex items-center gap-1.5 cursor-pointer" onclick="window.toggleFilterMenu('${config.id}')">
                         <span class="${isActive ? 'opacity-80' : 'text-slate-400 font-bold'}">${config.label}:</span>
                         <span class="font-bold truncate max-w-[120px]">${isActive ? currentVal : 'Todos'}</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'} ml-1"></i>
                     </div>
-                    ${isActive ? `<div class="pr-3 pl-1.5 py-1.5 border-l border-blue-500 hover:text-red-200 cursor-pointer transition-colors" onclick="setDashFilter('${config.id}', null)" title="Borrar filtro"><i data-lucide="x" class="w-3 h-3"></i></div>` : ''}
+                    ${isActive ? `<div class="pr-3 pl-1.5 py-1.5 border-l border-blue-500 hover:text-red-200 cursor-pointer transition-colors" onclick="window.setDashFilter('${config.id}', null)" title="Borrar filtro"><i data-lucide="x" class="w-3 h-3"></i></div>` : ''}
                 </div>
                 <div id="menu-${config.id}" class="filter-dropdown-menu hidden absolute top-full left-0 mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
-                    ${config.search ? `<div class="p-2 border-b border-slate-100 bg-slate-50 sticky top-0 z-10"><div class="relative"><i data-lucide="search" class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 bg-white" oninput="filterDropdownSearch(this, 'list-${config.id}')"></div></div>` : ''}
+                    ${config.search ? `<div class="p-2 border-b border-slate-100 bg-slate-50 sticky top-0 z-10"><div class="relative"><i data-lucide="search" class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 bg-white" oninput="window.filterDropdownSearch(this, 'list-${config.id}')"></div></div>` : ''}
                     <ul id="list-${config.id}" class="max-h-48 overflow-y-auto py-1 custom-scrollbar">
                         ${options.length === 0 ? `<li class="px-4 py-3 text-xs text-slate-400 italic text-center">Sin opciones bajo este filtro</li>` : ''}
-                        ${options.map(opt => `<li class="px-4 py-2 text-[11px] text-slate-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors ${currentVal === opt ? 'bg-blue-50 font-bold text-blue-700 border-l-2 border-blue-600' : 'border-l-2 border-transparent'}" onclick="setDashFilter('${config.id}', \`${opt.replace(/`/g, "\\`")}\`)">${opt}</li>`).join('')}
+                        ${options.map(opt => `<li class="px-4 py-2 text-[11px] text-slate-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors ${currentVal === opt ? 'bg-blue-50 font-bold text-blue-700 border-l-2 border-blue-600' : 'border-l-2 border-transparent'}" onclick="window.setDashFilter('${config.id}', \`${opt.replace(/`/g, "\\`")}\`)">${opt}</li>`).join('')}
                     </ul>
                 </div>
             </div>`;
@@ -524,14 +562,16 @@ window.removeCert = (id) => {
 };
 
 window.deleteCertificationsByBrand = async () => {
-    const brand = document.getElementById('support-brand-select').value;
+    const brandSelect = document.getElementById('support-brand-select');
+    if(!brandSelect) return;
+    const brand = brandSelect.value;
     if (!brand) return showNotification("Selecciona una marca primero", "error");
     const certsToDelete = state.certificaciones.filter(c => c.marca === brand);
     const total = certsToDelete.length;
     if (total === 0) return showNotification("No hay registros", "error");
     window.showConfirm("Eliminación Masiva", `Se eliminarán ${total} registros de "${brand}".`, async () => {
         const btnDelete = document.getElementById('btn-delete-brand');
-        btnDelete.disabled = true; btnDelete.classList.add('opacity-50');
+        if(btnDelete) { btnDelete.disabled = true; btnDelete.classList.add('opacity-50'); }
         const chunkSize = 20; let deletedCount = 0;
         for (let i = 0; i < total; i += chunkSize) {
             const chunk = certsToDelete.slice(i, i + chunkSize);
@@ -541,7 +581,7 @@ window.deleteCertificationsByBrand = async () => {
             catch (error) { showNotification("Error al eliminar", "error"); break; }
         }
         showNotification(`Se eliminaron ${deletedCount} registros.`, "success");
-        btnDelete.disabled = false; btnDelete.classList.remove('opacity-50');
+        if(btnDelete) { btnDelete.disabled = false; btnDelete.classList.remove('opacity-50'); }
     });
 };
 
@@ -560,41 +600,53 @@ window.disableHuerfano = async (id, nombre, originalEmail) => {
 };
 
 window.linkHuerfano = async (id, nombre) => {
-    const email = document.getElementById(`m-e-${id}`)?.value.toLowerCase().trim();
-    const area = document.getElementById(`m-a-${id}`)?.value;
-    const responsable = document.getElementById(`m-r-${id}`)?.value.trim() || "N/A";
-    const pais = document.getElementById(`m-p-${id}`)?.value.toUpperCase();
+    const emailEl = document.getElementById(`m-e-${id}`);
+    const areaEl = document.getElementById(`m-a-${id}`);
+    const respEl = document.getElementById(`m-r-${id}`);
+    const paisEl = document.getElementById(`m-p-${id}`);
+    
+    const email = emailEl ? emailEl.value.toLowerCase().trim() : "";
+    const area = areaEl ? areaEl.value : "";
+    const responsable = respEl ? respEl.value.trim() : "N/A";
+    const pais = paisEl ? paisEl.value.toUpperCase() : "";
+
     if (!email.includes('@') || !pais || !area) return showNotification("Faltan datos válidos", "error");
     showLoader("Vinculando...");
     try {
-        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { nombre, email, pais, area, activo: true, responsable });
+        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { nombre, email, pais, area, activo: true, responsable: responsable || "N/A" });
         const certs = state.certificaciones.filter(c => c.tempName === nombre || c.userEmail === `huerfano_${nombre.replace(/\s+/g, '_')}`);
         for(let cert of certs) await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id), { userEmail: email, tempName: null });
         showNotification("Asociado con éxito", "success");
     } catch (e) { showNotification("Error", "error"); } finally { hideLoader(); }
 };
 
-document.getElementById('form-persona')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('p-email').value.toLowerCase().trim();
-    const pais = document.getElementById('p-pais').value;
-    if (!pais) return showNotification("Selecciona el País", "error");
-    showLoader("Guardando...");
-    try {
-        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { nombre: document.getElementById('p-nombre').value, email, area: document.getElementById('p-area').value || "N/A", pais, responsable: document.getElementById('p-responsable').value || "N/A", activo: true });
-        showNotification("Colaborador añadido", "success"); e.target.reset();
-    } catch (e) { showNotification("Error", "error"); } finally { hideLoader(); }
-});
+const formPersona = document.getElementById('form-persona');
+if(formPersona) {
+    formPersona.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('p-email').value.toLowerCase().trim();
+        const pais = document.getElementById('p-pais').value;
+        if (!pais) return showNotification("Selecciona el País", "error");
+        showLoader("Guardando...");
+        try {
+            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { nombre: document.getElementById('p-nombre').value, email, area: document.getElementById('p-area').value || "N/A", pais, responsable: document.getElementById('p-responsable').value || "N/A", activo: true });
+            showNotification("Colaborador añadido", "success"); e.target.reset();
+        } catch (error) { showNotification("Error", "error"); } finally { hideLoader(); }
+    });
+}
 
-document.getElementById('form-cert')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = Math.random().toString(36).substr(2, 9);
-    showLoader("Guardando...");
-    try {
-        await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', id), { userEmail: document.getElementById('c-persona').value, marca: document.getElementById('c-marca').value, nombre: document.getElementById('c-nombre').value, vencimiento: document.getElementById('c-vence').value });
-        showNotification("Certificación vinculada", "success"); e.target.reset();
-    } catch (e) { showNotification("Error", "error"); } finally { hideLoader(); }
-});
+const formCert = document.getElementById('form-cert');
+if(formCert) {
+    formCert.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = Math.random().toString(36).substr(2, 9);
+        showLoader("Guardando...");
+        try {
+            await setDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', id), { userEmail: document.getElementById('c-persona').value, marca: document.getElementById('c-marca').value, nombre: document.getElementById('c-nombre').value, vencimiento: document.getElementById('c-vence').value });
+            showNotification("Certificación vinculada", "success"); e.target.reset();
+        } catch (error) { showNotification("Error", "error"); } finally { hideLoader(); }
+    });
+}
 
 window.exportToExcel = () => {
     const now = new Date(); now.setHours(0, 0, 0, 0); 
@@ -612,5 +664,8 @@ window.exportToExcel = () => {
 };
 
 // LISTENERS DE BUSCADORES
-document.getElementById('table-search')?.addEventListener('input', () => updateUI());
-document.getElementById('people-search')?.addEventListener('input', () => updateUI());
+const tableSearch = document.getElementById('table-search');
+if(tableSearch) tableSearch.addEventListener('input', () => updateUI());
+
+const peopleSearch = document.getElementById('people-search');
+if(peopleSearch) peopleSearch.addEventListener('input', () => updateUI());
