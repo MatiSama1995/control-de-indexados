@@ -9,8 +9,10 @@ import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.
 import * as UI from './ui-manager.js';
 import * as Processor from './data-processor.js';
 
+
 // Estado global de la aplicación
 let state = { personas: [], certificaciones: [] };
+window.state = state;
 
 // --- 1. LISTENERS DE FIREBASE (TIEMPO REAL) ---
 onAuthStateChanged(auth, (user) => {
