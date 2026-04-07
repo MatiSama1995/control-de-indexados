@@ -1,3 +1,4 @@
+alert("¡El archivo app.js cargó correctamente!");
 /**
  * js/app.js - Versión Ultra-Segura
  */
