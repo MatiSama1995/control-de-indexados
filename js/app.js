@@ -9,7 +9,6 @@ import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.
 import * as UI from './ui-manager.js';
 import * as Processor from './data-processor.js';
 
-
 // Estado global de la aplicación
 let state = { personas: [], certificaciones: [] };
 window.state = state;
@@ -37,24 +36,31 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- 2. EVENTOS DE NAVEGACIÓN ---
-document.getElementById('tab-dashboard').onclick = () => UI.switchTab('dashboard');
-document.getElementById('tab-upload').onclick = () => UI.switchTab('upload');
-document.getElementById('tab-manage').onclick = () => UI.switchTab('manage');
-document.getElementById('tab-table').onclick = () => UI.switchTab('table');
-document.getElementById('tab-support').onclick = () => UI.switchTab('support');
+// --- 2. EVENTOS DE NAVEGACIÓN PRINCIPAL ---
+// Nota: Usamos las IDs que están en tu HTML de GitHub (btn-dashboard, etc.)
+const assignTab = (id, viewName) => {
+    const el = document.getElementById(id);
+    if(el) el.onclick = () => UI.switchTab(viewName);
+};
+
+assignTab('btn-dashboard', 'dashboard');
+assignTab('btn-upload', 'upload');
+assignTab('btn-manage', 'manage');
+assignTab('btn-table', 'table');
+assignTab('btn-support', 'support');
+
 document.getElementById('btn-logout').onclick = () => signOut(auth);
+
 // --- 2.1 EVENTOS DE SUB-NAVEGACIÓN (GESTIÓN MANUAL) ---
-document.getElementById('subtab-new').onclick = () => UI.switchSubTab('new');
-document.getElementById('subtab-people').onclick = () => UI.switchSubTab('people');
-document.getElementById('subtab-exceptions').onclick = () => UI.switchSubTab('exceptions');
-const btnNew = document.getElementById('btn-manage-forms');
+// Eliminamos las líneas viejas de "subtab-" que causaban error
+const btnForms = document.getElementById('btn-manage-forms');
 const btnPeople = document.getElementById('btn-manage-people');
 const btnMiss = document.getElementById('btn-manage-missing');
 
-if(btnNew) btnNew.onclick = () => UI.switchSubTab('forms');
+if(btnForms) btnForms.onclick = () => UI.switchSubTab('forms');
 if(btnPeople) btnPeople.onclick = () => UI.switchSubTab('people');
 if(btnMiss) btnMiss.onclick = () => UI.switchSubTab('missing');
+
 // --- 3. MANEJO DE LOGIN ---
 document.getElementById('login-form').onsubmit = async (e) => {
     e.preventDefault();
@@ -65,7 +71,7 @@ document.getElementById('login-form').onsubmit = async (e) => {
     }
 };
 
-// --- 4. MANEJO DE CARGA DE ARCHIVOS (LAS 4 TARJETAS) ---
+// --- 4. MANEJO DE CARGA DE ARCHIVOS ---
 const setupFile = (id, type) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -81,10 +87,9 @@ const setupFile = (id, type) => {
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const json = XLSX.utils.sheet_to_json(sheet);
             
-            // Abrir modal de progreso
             document.getElementById('upload-progress-modal').classList.remove('hidden');
             const logContainer = document.getElementById('upload-progress-log');
-            logContainer.innerHTML = ''; // Limpiar log anterior
+            logContainer.innerHTML = '';
 
             const updateLog = (curr, tot, msg) => {
                 const progress = Math.round((curr / tot) * 100);
@@ -99,7 +104,6 @@ const setupFile = (id, type) => {
                 UI.showNotification(finalMsg, "success");
             };
 
-            // Ejecutar el procesador correspondiente
             try {
                 if (type === 'personas') await Processor.processPeople(json, updateLog, onFinish);
                 if (type === 'cisco')    await Processor.processCisco(json, updateLog, onFinish);
@@ -114,13 +118,11 @@ const setupFile = (id, type) => {
     };
 };
 
-// Activar los 4 inputs de archivos
 setupFile('file-personas', 'personas');
 setupFile('file-fortinet', 'fortinet');
 setupFile('file-cisco', 'cisco');
 setupFile('file-general', 'general');
 
-// Botón para cerrar el modal de carga
 document.getElementById('btn-close-upload').onclick = () => {
     document.getElementById('upload-progress-modal').classList.add('hidden');
     document.getElementById('btn-close-upload').classList.add('hidden');
