@@ -407,13 +407,6 @@
     </div>
 
     <!-- Script Principal modularizado con anti-caché -->
-    <script>
-  // Este truco genera una versión única cada vez para evitar la caché
-  const version = new Date().getTime();
-  const script = document.createElement('script');
-  script.type = 'module';
-  script.src = `./js/app.js?v=${version}`;
-  document.body.appendChild(script);
-</script>
+    <script type="module" src="./js/app.js?v=3"></script>
 </body>
 </html>
