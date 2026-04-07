@@ -68,10 +68,10 @@ export const refreshUI = (state) => {
         missingBody.innerHTML += `
             <tr class="border-b hover:bg-slate-50">
                 <td class="p-4">
-                    <input type="text" id="m-n-${idSafe}" value="${v.name}" class="w-full text-xs p-2 border rounded font-bold bg-white">
+                    <input type="text" id="m-n-${idSafe}" value="${v.name}" class="w-full text-xs p-2 border rounded font-bold bg-white outline-none focus:ring-1 focus:ring-blue-500">
                 </td>
                 <td class="p-4">
-                    <input type="email" id="m-e-${idSafe}" value="${v.email.includes('huerfano') ? '' : v.email}" class="w-full text-xs p-2 border rounded">
+                    <input type="email" id="m-e-${idSafe}" value="${v.email.includes('huerfano') ? '' : v.email}" class="w-full text-xs p-2 border rounded outline-none">
                 </td>
                 <td class="p-4">
                     <select id="m-p-${idSafe}" class="text-[10px] p-2 border rounded font-bold uppercase">
