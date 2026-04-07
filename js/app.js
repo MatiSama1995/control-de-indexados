@@ -24,8 +24,9 @@ const filterConfigs = [
     { id: 'colaborador', label: 'Colaborador', search: true }
 ];
 
-// INICIALIZACIÓN DE ICONOS
-window.onload = () => lucide.createIcons();
+// INICIALIZACIÓN DE ICONOS (Ejecución inmediata para módulos)
+lucide.createIcons();
+setTimeout(() => lucide.createIcons(), 200); // Respaldo por si la red es lenta
 
 // EXPONER FUNCIONES DE UI AL WINDOW (Para el HTML)
 window.switchTab = switchTab;
@@ -94,33 +95,32 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('username').value;
-        const pass = document.getElementById('password').value;
-        const btn = loginForm.querySelector('button[type="submit"]');
+window.handleLogin = async () => {
+    const email = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    const btn = document.querySelector('#login-form button[type="submit"]');
 
-        const originalText = btn.innerText;
-        btn.innerText = "Verificando Permisos...";
-        btn.disabled = true;
+    const originalText = btn.innerText;
+    btn.innerText = "Verificando Permisos...";
+    btn.disabled = true;
 
-        try {
-            await signInWithEmailAndPassword(auth, email, pass);
-            showNotification("Sesión iniciada correctamente", "success");
-        } catch (error) {
-            const errorMsg = document.getElementById('login-error');
-            if (error.code === 'auth/invalid-credential') errorMsg.innerText = "Correo o contraseña incorrectos.";
-            else errorMsg.innerText = "Error: " + error.message;
-            errorMsg.classList.remove('hidden');
-            setTimeout(() => errorMsg.classList.add('hidden'), 4000);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        showNotification("Sesión iniciada correctamente", "success");
+    } catch (error) {
+        const errorMsg = document.getElementById('login-error');
+        if (error.code === 'auth/invalid-credential') {
+            errorMsg.innerText = "Correo o contraseña incorrectos.";
+        } else {
+            errorMsg.innerText = "Error: " + error.message;
         }
-    });
-}
+        errorMsg.classList.remove('hidden');
+        setTimeout(() => errorMsg.classList.add('hidden'), 4000);
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
 
 window.logout = () => {
     window.showConfirm("Cerrar Sesión", "¿Deseas cerrar la sesión segura de CertiTrack?", async () => {
