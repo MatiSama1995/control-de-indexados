@@ -1,3 +1,6 @@
+alert("¡EL CÓDIGO NUEVO ESTÁ CARGANDO!");
+console.log("UI Manager cargado correctamente");
+
 import { db, firestoreAppId } from './firebase-config.js';
 import { doc, deleteDoc, updateDoc, writeBatch, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
