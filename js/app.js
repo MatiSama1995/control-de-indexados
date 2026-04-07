@@ -1,22 +1,22 @@
 /**
- * js/app.js
- * Orquestador principal corregido
+ * js/app.js - Versión Ultra-Segura
  */
-
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import * as UI from './ui-manager.js';
-import * as Processor from './data-processor.js';
 
 let state = { personas: [], certificaciones: [] };
 window.state = state;
 
-// --- 1. LISTENERS DE FIREBASE (TIEMPO REAL) ---
+// --- 1. LISTENERS DE FIREBASE ---
 onAuthStateChanged(auth, (user) => {
+    const loginScreen = document.getElementById('login-screen');
+    const appContent = document.getElementById('app-content');
+
     if (user) {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('app-content').classList.remove('hidden');
+        if(loginScreen) loginScreen.classList.add('hidden');
+        if(appContent) appContent.classList.remove('hidden');
         
         onSnapshot(collection(db, 'artifacts', 'certitrack-v1', 'public', 'data', 'personas'), (snap) => {
             state.personas = snap.docs.map(d => ({ email: d.id, ...d.data() }));
@@ -28,95 +28,46 @@ onAuthStateChanged(auth, (user) => {
             UI.refreshUI(state);
         });
     } else {
-        document.getElementById('login-screen').classList.remove('hidden');
-        document.getElementById('app-content').classList.add('hidden');
+        if(loginScreen) loginScreen.classList.remove('hidden');
+        if(appContent) appContent.classList.add('hidden');
     }
 });
 
-// --- 2. EVENTOS DE NAVEGACIÓN PRINCIPAL ---
-// Usando las IDs de tu HTML real (btn-dashboard, etc.)
-const navButtons = {
-    'btn-dashboard': 'dashboard',
-    'btn-upload': 'upload',
-    'btn-manage': 'manage',
-    'btn-table': 'table',
-    'btn-support': 'support'
-};
-
-Object.entries(navButtons).forEach(([id, view]) => {
-    const btn = document.getElementById(id);
-    if(btn) btn.onclick = () => UI.switchTab(view);
-});
-
-document.getElementById('btn-logout').onclick = () => signOut(auth);
-
-// --- 2.1 EVENTOS DE SUB-NAVEGACIÓN DE GESTIÓN ---
-// Aquí usamos las IDs correctas y con protección para que no rompa el código
-const btnForms = document.getElementById('btn-manage-forms');
-const btnPeople = document.getElementById('btn-manage-people');
-const btnMiss = document.getElementById('btn-manage-missing');
-
-if(btnForms) btnForms.onclick = () => UI.switchSubTab('forms');
-if(btnPeople) btnPeople.onclick = () => UI.switchSubTab('people');
-if(btnMiss) btnMiss.onclick = () => UI.switchSubTab('missing');
-
-// --- 3. MANEJO DE LOGIN (AHORA SÍ FUNCIONARÁ) ---
+// --- 2. MANEJO DE LOGIN (PUESTO ARRIBA PARA PRIORIDAD) ---
 const loginForm = document.getElementById('login-form');
 if (loginForm) {
-    loginForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = loginForm.querySelector('button');
-        const originalText = btn.innerText;
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); // <--- ESTO EVITA EL "?" EN LA URL
+        const email = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
         
         try {
-            btn.innerText = "Cargando...";
-            btn.disabled = true;
-            await signInWithEmailAndPassword(auth, document.getElementById('username').value, document.getElementById('password').value);
+            await signInWithEmailAndPassword(auth, email, pass);
+            console.log("Login exitoso");
         } catch (err) {
-            UI.showNotification("Credenciales incorrectas", "error");
-            console.error("Error login:", err.message);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
+            alert("Error: " + err.message);
         }
-    };
+    });
 }
 
-// --- 4. MANEJO DE CARGA DE ARCHIVOS Y BUSCADOR ---
-const setupFile = (id, type) => {
+// --- 3. NAVEGACIÓN (CON PROTECCIÓN CONTRA ERRORES) ---
+const setupClick = (id, fn) => {
     const el = document.getElementById(id);
-    if (!el) return;
-    el.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            const data = new Uint8Array(ev.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(sheet);
-            
-            document.getElementById('upload-progress-modal').classList.remove('hidden');
-            
-            const updateLog = (curr, tot, msg) => {
-                document.getElementById('upload-progress-bar').style.width = `${Math.round((curr / tot) * 100)}%`;
-                document.getElementById('upload-progress-count').innerText = `${curr} / ${tot}`;
-                const log = document.getElementById('upload-progress-log');
-                if(log) log.innerHTML += `<li class="py-1">✓ ${msg}</li>`;
-            };
-
-            try {
-                if (type === 'personas') await Processor.processPeople(json, updateLog, () => UI.showNotification("Éxito", "success"));
-                // ... los demás procesadores ...
-            } catch (err) { UI.showNotification("Error", "error"); }
-        };
-        reader.readAsArrayBuffer(file);
-    };
+    if (el) el.onclick = fn;
 };
 
-setupFile('file-personas', 'personas');
-setupFile('file-fortinet', 'fortinet');
-setupFile('file-cisco', 'cisco');
-setupFile('file-general', 'general');
+// Pestañas principales
+setupClick('btn-dashboard', () => UI.switchTab('dashboard'));
+setupClick('btn-upload', () => UI.switchTab('upload'));
+setupClick('btn-manage', () => UI.switchTab('manage'));
+setupClick('btn-table', () => UI.switchTab('table'));
+setupClick('btn-support', () => UI.switchTab('support'));
+setupClick('btn-logout', () => signOut(auth));
 
+// Sub-pestañas de Gestión (Las IDs de tu HTML real)
+setupClick('btn-manage-forms', () => UI.switchSubTab('forms'));
+setupClick('btn-manage-people', () => UI.switchSubTab('people'));
+setupClick('btn-manage-missing', () => UI.switchSubTab('missing'));
+
+// --- 4. BUSCADOR ---
 document.getElementById('table-search')?.addEventListener('input', () => UI.refreshUI(state));
