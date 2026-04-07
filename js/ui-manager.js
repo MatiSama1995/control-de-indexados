@@ -1,3 +1,12 @@
+// Añade esta función al principio del archivo
+export const switchSubTab = (subId) => {
+    document.querySelectorAll('.sub-section').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('bg-white', 'shadow-sm', 'shadow-slate-200'));
+    
+    document.getElementById(`subview-${subId}`).classList.remove('hidden');
+    document.getElementById(`subtab-${subId}`).classList.add('bg-white', 'shadow-sm', 'shadow-slate-200');
+};
+
 alert("¡EL CÓDIGO NUEVO ESTÁ CARGANDO!");
 console.log("UI Manager cargado correctamente");
 
