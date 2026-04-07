@@ -33,6 +33,58 @@
         </div>
     </div>
 
+    <!-- Modal de Edición -->
+    <div id="edit-user-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md transform transition-transform mx-4">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="bg-blue-100 p-2 rounded-full text-blue-600">
+                    <i data-lucide="edit" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">Editar Colaborador</h3>
+            </div>
+            <form id="form-edit-user" class="space-y-4">
+                <input type="hidden" id="edit-original-email">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Nombre Completo</label>
+                    <input type="text" id="edit-nombre" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Email Corporativo (Clave Única - No editable)</label>
+                    <input type="email" id="edit-email" readonly class="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg outline-none text-slate-500 text-sm cursor-not-allowed">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Área</label>
+                        <select id="edit-area" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option value="Comercial">Comercial</option>
+                            <option value="Pre-venta">Pre-venta</option>
+                            <option value="Ingenieria">Ingeniería</option>
+                            <option value="COE">COE</option>
+                            <option value="Sin definir">Sin definir</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">País</label>
+                        <select id="edit-pais" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option value="CHILE">CHILE</option>
+                            <option value="PERÚ">PERÚ</option>
+                            <option value="COLOMBIA">COLOMBIA</option>
+                            <option value="N/A">N/A</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Responsable</label>
+                    <input type="text" id="edit-responsable" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="window.closeEditModal()" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-md">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <!-- PANTALLA DE LOGIN -->
     <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-100 overflow-y-auto py-8">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 m-auto">
