@@ -43,16 +43,21 @@ export const refreshUI = (state) => {
     
     if(!masterBody) return;
 
-    masterBody.innerHTML = ''; alertsBody.innerHTML = ''; peopleBody.innerHTML = ''; missingBody.innerHTML = '';
+    // Limpiar todo antes de renderizar
+    masterBody.innerHTML = ''; alertsBody.innerHTML = ''; 
+    peopleBody.innerHTML = ''; missingBody.innerHTML = '';
 
     const now = new Date();
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
+    
+    // Variables para el Dashboard
+    let stats = { total: 0, active: 0, warning: 0, expired: 0 };
     let huerfanos = new Map();
 
     // 1. Maestro de Personas
     state.personas.forEach(p => {
         peopleBody.innerHTML += `
-            <tr class="border-b hover:bg-slate-50">
+            <tr class="border-b hover:bg-slate-50 ${!p.activo ? 'opacity-50' : ''}">
                 <td class="p-4"><b>${p.nombre}</b><br><span class="text-[10px] text-slate-400">${p.email}</span></td>
                 <td class="p-4 text-xs font-bold uppercase">${p.pais} / ${p.area}</td>
                 <td class="p-4 text-right">
@@ -62,6 +67,93 @@ export const refreshUI = (state) => {
                 </td>
             </tr>`;
     });
+
+    // 2. Certificaciones y Lógica de Dashboard
+    state.certificaciones.forEach(c => {
+        const p = state.personas.find(per => per.email === c.userEmail);
+        const isMiss = !p;
+        
+        if (isMiss) {
+            huerfanos.set(c.userEmail, { name: c.tempName || 'Detectado', email: c.userEmail, country: c.detectedCountry || 'CH' });
+        }
+
+        const match = !search || c.nombre.toLowerCase().includes(search) || (p?.nombre || "").toLowerCase().includes(search);
+        
+        if (match) {
+            const vDate = new Date(c.vencimiento);
+            let status = "Vigente", col = "bg-green-100 text-green-700";
+            
+            if (isMiss) { 
+                status = "Huérfano"; col = "bg-red-600 text-white"; 
+                stats.expired++; // Contamos huérfanos como alertas
+            } else if (vDate < now) { 
+                status = "Vencida"; col = "bg-red-100 text-red-700"; 
+                stats.expired++;
+            } else if (vDate < warningLimit) { 
+                status = "Por Vencer"; col = "bg-amber-100 text-amber-700"; 
+                stats.warning++;
+            } else {
+                stats.active++;
+            }
+            
+            if (!isMiss) stats.total++;
+
+            const tr = `<tr class="border-b hover:bg-slate-50"><td class="p-4 font-bold text-sm">${p ? p.nombre : (c.tempName || 'Huérfano')}</td><td class="p-4 text-xs"><b>${c.marca}</b><br>${c.nombre}</td><td class="p-4 text-xs text-center">${c.vencimiento}</td><td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${col}">${status}</span></td><td class="p-4 text-right"><button onclick="window.deleteCert('${c.id}')" class="text-slate-300 hover:text-red-500 transition-colors">Eliminar</button></td></tr>`;
+            masterBody.innerHTML += tr;
+            if (status !== "Vigente") alertsBody.innerHTML += tr;
+        }
+    });
+
+    // --- ACTUALIZAR TARJETAS DEL DASHBOARD ---
+    document.getElementById('stat-total').innerText = stats.total;
+    document.getElementById('stat-active').innerText = stats.active;
+    document.getElementById('stat-warning').innerText = stats.warning;
+    document.getElementById('stat-expired').innerText = stats.expired;
+    document.getElementById('alerts-count').innerText = stats.expired + stats.warning;
+
+    // 3. Excepciones (NOMBRE SUGERIDO EDITABLE)
+    huerfanos.forEach((v, k) => {
+        const idSafe = k.replace(/[.@\s]/g, '_'); 
+        missingBody.innerHTML += `
+            <tr class="border-b hover:bg-slate-50">
+                <td class="px-4 py-3">
+                    <input type="text" id="m-n-${idSafe}" value="${v.name}" class="w-full text-xs p-2 border rounded-xl font-bold bg-white focus:ring-2 focus:ring-blue-100 outline-none">
+                </td>
+                <td class="px-4 py-3">
+                    <input type="email" id="m-e-${idSafe}" value="${v.email.includes('huerfano') ? '' : v.email}" class="w-full text-xs p-2 border rounded-xl outline-none bg-slate-50" placeholder="Email...">
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <select id="m-p-${idSafe}" class="text-[10px] p-2 border rounded-xl font-bold uppercase">
+                        <option value="CHILE" ${v.country.includes('CH') ? 'selected' : ''}>CH</option>
+                        <option value="PERÚ" ${v.country.includes('PE') ? 'selected' : ''}>PE</option>
+                        <option value="COLOMBIA" ${v.country.includes('CO') ? 'selected' : ''}>CO</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <select id="m-a-${idSafe}" class="text-[10px] p-2 border rounded-xl font-bold uppercase">
+                        <option value="INGENIERIA">INGENIERÍA</option>
+                        <option value="COMERCIAL">COMERCIAL</option>
+                        <option value="PRE-VENTA">PRE-VENTA</option>
+                        <option value="COE">COE</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="text" id="m-r-${idSafe}" placeholder="Responsable" class="w-full text-xs p-2 border rounded-xl outline-none bg-slate-50">
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <button onclick="window.linkHuerfano('${idSafe}', '${k}')" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black hover:bg-blue-700 shadow-md">ASOCIAR</button>
+                </td>
+            </tr>`;
+    });
+
+    const badge = document.getElementById('missing-badge');
+    if(badge) {
+        badge.innerText = huerfanos.size;
+        badge.style.display = huerfanos.size > 0 ? 'inline-block' : 'none';
+    }
+
+    lucide.createIcons();
+};
 
     // 2. Certificaciones
     state.certificaciones.forEach(c => {
