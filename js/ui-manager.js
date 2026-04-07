@@ -2,15 +2,33 @@ import { db, firestoreAppId } from './firebase-config.js';
 import { doc, deleteDoc, updateDoc, writeBatch, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- NAVEGACIÓN DE SUB-PESTAÑAS (GESTIÓN MANUAL) ---
+// --- js/ui-manager.js ---
+
 export const switchSubTab = (subId) => {
-    document.querySelectorAll('.sub-section').forEach(s => s.classList.add('hidden'));
-    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('bg-white', 'shadow-sm', 'shadow-slate-200'));
+    // 1. Ocultamos todas las secciones de gestión
+    // Usamos la clase 'manage-section' que es la que tiene tu HTML actual
+    document.querySelectorAll('.manage-section').forEach(s => s.classList.add('hidden'));
     
-    const targetView = document.getElementById(`subview-${subId}`);
-    const targetBtn = document.getElementById(`subtab-${subId}`);
+    // 2. Quitamos el estilo "activo" de todos los botones
+    // Usamos la clase 'manage-subtab'
+    document.querySelectorAll('.manage-subtab').forEach(t => {
+        t.classList.remove('subtab-active', 'bg-white', 'shadow-sm');
+        t.classList.add('text-slate-500'); // Color gris para los inactivos
+    });
     
-    if (targetView) targetView.classList.remove('hidden');
-    if (targetBtn) targetBtn.classList.add('bg-white', 'shadow-sm', 'shadow-slate-200');
+    // 3. Mostramos la sección destino
+    // Las IDs en tu HTML son 'manage-forms', 'manage-people', 'manage-missing'
+    const targetView = document.getElementById(`manage-${subId}`);
+    const targetBtn = document.getElementById(`btn-manage-${subId}`);
+    
+    if (targetView) {
+        targetView.classList.remove('hidden');
+    }
+    
+    if (targetBtn) {
+        targetBtn.classList.add('subtab-active');
+        targetBtn.classList.remove('text-slate-500');
+    }
 };
 
 // --- NOTIFICACIONES ---
