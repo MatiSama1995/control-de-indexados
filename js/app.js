@@ -747,6 +747,83 @@ window.deleteCertificationsByBrand = async () => {
     });
 };
 
+window.cleanDuplicates = async () => {
+    // 1. Función para normalizar textos (sin espacios extra, en minúsculas)
+    const normalize = (str) => String(str || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    
+    // 2. Agrupamos todas las certificaciones
+    // La llave maestra será: "correo_del_usuario_|_nombre_de_la_certificacion"
+    const grupos = {};
+    state.certificaciones.forEach(cert => {
+        const emailKey = normalize(cert.userEmail);
+        const certKey = normalize(cert.nombre);
+        
+        // Si no tiene correo o no tiene nombre, lo ignoramos para no romper nada
+        if (!emailKey || !certKey || emailKey === 'sin definir' || certKey === 'sin definir') return;
+
+        const compKey = `${emailKey}_|_${certKey}`;
+        
+        if (!grupos[compKey]) grupos[compKey] = [];
+        grupos[compKey].push(cert);
+    });
+
+    let idsAEliminar = [];
+
+    // 3. Analizamos los grupos para detectar cuáles tienen más de 1 registro
+    Object.values(grupos).forEach(grupo => {
+        if (grupo.length > 1) {
+            // Ordenamos el grupo por fecha de vencimiento descendente (el más lejano primero)
+            grupo.sort((a, b) => new Date(b.vencimiento) - new Date(a.vencimiento));
+            
+            // Nos saltamos el primero (índice 0, que es el que vamos a conservar)
+            // y metemos los IDs de todos los demás a la lista negra
+            for (let i = 1; i < grupo.length; i++) {
+                idsAEliminar.push(grupo[i].id);
+            }
+        }
+    });
+
+    // 4. Reportamos al usuario si no hay nada que hacer
+    if (idsAEliminar.length === 0) {
+        return showNotification("¡Base de datos impecable! No se encontraron duplicados.", "success");
+    }
+
+    // 5. Confirmación de seguridad
+    window.showConfirm(
+        "Limpieza de Duplicados", 
+        `El escáner detectó ${idsAEliminar.length} registros duplicados (mismo colaborador y misma certificación). Se conservarán las fechas de expiración más lejanas. ¿Deseas eliminar las copias basura de forma permanente?`, 
+        async () => {
+            showLoader("Purgando duplicados...");
+            try {
+                // Usamos Batch (lotes) porque Firestore solo permite borrar de a 500 a la vez
+                const chunkSize = 200; 
+                let deletedCount = 0;
+                
+                for (let i = 0; i < idsAEliminar.length; i += chunkSize) {
+                    const chunk = idsAEliminar.slice(i, i + chunkSize);
+                    const batch = writeBatch(db);
+                    
+                    chunk.forEach(id => {
+                        batch.delete(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', id));
+                    });
+                    
+                    await batch.commit();
+                    deletedCount += chunk.length;
+                }
+                
+                showNotification(`¡Limpieza profunda terminada! Se eliminaron ${deletedCount} duplicados.`, "success");
+            } catch (error) {
+                console.error("Error en purga masiva:", error);
+                showNotification("Ocurrió un error intentando limpiar la base de datos.", "error");
+            } finally {
+                hideLoader();
+            }
+        }, 
+        "Purgar Ahora", 
+        true
+    );
+};
+
 // ==========================================
 // NUEVAS FUNCIONES EDITABLES PARA HUÉRFANOS
 // ==========================================
