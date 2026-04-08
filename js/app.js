@@ -259,13 +259,12 @@ window.setDashFilter = (key, value, isMulti) => {
     if (isMulti) {
         const index = activeDashFilters[key].indexOf(value);
         if (index > -1) {
-            activeDashFilters[key].splice(index, 1); // Quitar si ya está
+            activeDashFilters[key].splice(index, 1);
         } else {
-            activeDashFilters[key].push(value); // Agregar si no está
+            activeDashFilters[key].push(value);
         }
     } else {
         activeDashFilters[key] = value;
-        // Si no es multi, cerramos el menú al elegir
         const menuEl = document.getElementById(`menu-${key}`);
         if(menuEl) menuEl.classList.add('hidden');
     }
@@ -283,11 +282,6 @@ window.clearAllDashFilters = () => {
     activeDashFilters.marca = null;
     activeDashFilters.certificacion = [];
     activeDashFilters.colaborador = null;
-    renderDashboard();
-};
-
-window.clearAllDashFilters = () => {
-    Object.keys(activeDashFilters).forEach(k => activeDashFilters[k] = null);
     renderDashboard();
 };
 
@@ -472,11 +466,7 @@ const renderDashboard = () => {
 
     let dashData = state.certificaciones.map(c => {
         const p = state.personas.find(per => per.email === c.userEmail);
-        
-        // LÓGICA MEJORADA PARA HUÉRFANOS: 
-        // Rescatamos el nombre sugerido (tempName) o sacamos el prefijo del correo.
         let nombreSugerido = c.tempName || c.userEmail.split('@')[0].replace('huerfano_', '').replace(/_/g, ' ');
-        // Si el correo empieza con 'huerfano_', no es real, mostramos "Sin definir". Si es real, lo mostramos.
         let emailSugerido = c.userEmail.startsWith('huerfano_') ? 'Sin definir' : c.userEmail;
 
         return {
@@ -494,12 +484,9 @@ const renderDashboard = () => {
     const filteredData = dashData.filter(item => {
         for (const [key, val] of Object.entries(activeDashFilters)) {
             if (!val) continue;
-            // Lógica para Multi-select (Arrays)
-            if (Array.isArray(val) && val.length > 0) {
-                if (!val.includes(item[key])) return false;
-            } 
-            // Lógica para Single-select (Strings)
-            else if (typeof val === 'string' && item[key] !== val) {
+            if (Array.isArray(val)) {
+                if (val.length > 0 && !val.includes(item[key])) return false;
+            } else if (typeof val === 'string' && item[key] !== val) {
                 return false;
             }
         }
@@ -542,7 +529,6 @@ const renderDashboard = () => {
             if (item.marca) chartDataMarcas[item.marca] = (chartDataMarcas[item.marca] || 0) + 1;
         }
 
-        // Fila para: Resumen de Registros
         generalHTML += `<tr class="hover:bg-slate-50 transition-colors">
             <td class="px-6 py-4 text-center"><span class="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg uppercase tracking-widest">${item.pais}</span></td>
             <td class="px-6 py-4"><div class="font-bold text-slate-800">${item.colaborador}</div><div class="text-[11px] text-slate-500 mt-0.5 flex items-center"><i data-lucide="mail" class="w-3 h-3 mr-1"></i> ${item.userEmail} <span class="mx-2 text-slate-300">|</span> <i data-lucide="briefcase" class="w-3 h-3 mr-1"></i> ${item.area}</div></td>
@@ -550,7 +536,6 @@ const renderDashboard = () => {
             <td class="px-6 py-4"><div class="text-sm font-medium text-slate-700">${item.certificacion}</div><div class="text-[11px] mt-1 flex items-center ${stTxt === 'Vigente' ? 'text-green-600' : (stTxt === 'Por Vencer' ? 'text-amber-600' : 'text-red-600')}"><i data-lucide="calendar" class="w-3 h-3 mr-1"></i> Expira: ${item.vencimiento}</div></td>
         </tr>`;
 
-        // Fila para: Alertas de Vencimiento y Huérfanos (AQUÍ ESTÁ LA CELDA EXTRA PARA ALINEAR EL EMAIL)
         if (stTxt === 'Vencida' || stTxt === 'Por Vencer' || stTxt === 'Huérfano') {
             alertsCount++;
             alertsHTML += `<tr class="${stTxt === 'Huérfano' ? 'bg-red-50/50' : 'hover:bg-slate-50'} transition-colors">
@@ -582,7 +567,10 @@ const renderDashboard = () => {
 
     renderCharts(chartDataStatus, chartDataColabs, chartDataCountries, chartDataAreas, chartDataMarcas);
 
-    filterConfigs.forEach(config => {
+    const filterContainer = document.getElementById('dash-filters-container');
+    if(filterContainer) {
+        let filtersHTML = '';
+        filterConfigs.forEach(config => {
             const validForThis = dashData.filter(item => {
                 for (const [key, val] of Object.entries(activeDashFilters)) {
                     if (key !== config.id) {
@@ -598,7 +586,6 @@ const renderDashboard = () => {
             const isArray = Array.isArray(currentVal);
             const isActive = isArray ? currentVal.length > 0 : currentVal !== null;
             
-            // Texto del botón: si hay varios, muestra "Item +X"
             let labelDisplay = 'Todos';
             if (isActive) {
                 if (isArray) {
@@ -608,7 +595,7 @@ const renderDashboard = () => {
                 }
             }
 
-            const pillClass = isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200';
+            const pillClass = isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
 
             filtersHTML += `
             <div class="relative filter-dropdown-container">
@@ -616,17 +603,18 @@ const renderDashboard = () => {
                     <div class="px-3 py-1.5 flex items-center gap-1.5 cursor-pointer" onclick="window.toggleFilterMenu('${config.id}')">
                         <span class="${isActive ? 'opacity-80' : 'text-slate-400 font-bold'}">${config.label}:</span>
                         <span class="font-bold truncate max-w-[120px]">${labelDisplay}</span>
-                        <i data-lucide="chevron-down" class="w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'}"></i>
+                        <i data-lucide="chevron-down" class="w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'} ml-1"></i>
                     </div>
-                    ${isActive ? `<div class="pr-3 pl-1.5 py-1.5 border-l ${isArray ? 'border-blue-500' : 'border-blue-500'} hover:text-red-200 cursor-pointer" onclick="window.clearSingleFilter('${config.id}')"><i data-lucide="x" class="w-3 h-3"></i></div>` : ''}
+                    ${isActive ? `<div class="pr-3 pl-1.5 py-1.5 border-l ${isArray ? 'border-blue-500' : 'border-slate-300'} hover:text-red-200 cursor-pointer" onclick="window.clearSingleFilter('${config.id}')" title="Borrar filtro"><i data-lucide="x" class="w-3 h-3"></i></div>` : ''}
                 </div>
                 <div id="menu-${config.id}" class="filter-dropdown-menu hidden absolute top-full left-0 mt-2 w-64 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
-                    ${config.search ? `<div class="p-2 border-b bg-slate-50"><input type="text" placeholder="Buscar..." class="w-full p-2 text-xs border rounded-lg" oninput="window.filterDropdownSearch(this, 'list-${config.id}')"></div>` : ''}
+                    ${config.search ? `<div class="p-2 border-b bg-slate-50 sticky top-0 z-10"><input type="text" placeholder="Buscar..." class="w-full p-2 text-xs border rounded-lg outline-none" oninput="window.filterDropdownSearch(this, 'list-${config.id}')"></div>` : ''}
                     <ul id="list-${config.id}" class="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                        ${options.length === 0 ? `<li class="px-4 py-3 text-xs text-slate-400 italic text-center">Sin opciones</li>` : ''}
                         ${options.map(opt => {
                             const isSelected = isArray ? currentVal.includes(opt) : currentVal === opt;
                             return `
-                            <li class="px-4 py-2 text-[11px] flex items-center justify-between hover:bg-blue-50 cursor-pointer ${isSelected ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'}" 
+                            <li class="px-4 py-2 text-[11px] flex items-center justify-between hover:bg-blue-50 cursor-pointer ${isSelected ? 'bg-blue-50 text-blue-700 font-bold border-l-2 border-blue-600' : 'text-slate-600 border-l-2 border-transparent'}" 
                                 onclick="window.setDashFilter('${config.id}', \`${opt.replace(/`/g, "\\`")}\`, ${config.multi})">
                                 ${opt}
                                 ${isSelected ? '<i data-lucide="check" class="w-3 h-3"></i>' : ''}
