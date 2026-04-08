@@ -462,6 +462,37 @@ const updateUI = () => {
         s.value = current;
     }
 
+    // --- NUEVO: Llenar Select de Años para Soporte ---
+    const yearSelect = document.getElementById('support-year-select');
+    if (yearSelect) {
+        const currentYearVal = yearSelect.value;
+        yearSelect.innerHTML = '<option value="">Selecciona un año...</option>';
+        const allYears = [...new Set(state.certificaciones.map(c => c.vencimiento ? c.vencimiento.substring(0, 4) : null))].filter(Boolean).sort();
+        allYears.forEach(y => {
+            const count = state.certificaciones.filter(c => c.vencimiento && c.vencimiento.startsWith(y)).length;
+            const opt = document.createElement('option');
+            opt.value = y; opt.textContent = `${y} (${count} registros)`;
+            yearSelect.appendChild(opt);
+        });
+        if(currentYearVal && currentYearVal !== "Cargando años...") yearSelect.value = currentYearVal;
+    }
+
+    // --- NUEVO: Llenar Select de Colaboradores para Soporte ---
+    const colabSelect = document.getElementById('support-colab-select');
+    if (colabSelect) {
+        const currentColabVal = colabSelect.value;
+        colabSelect.innerHTML = '<option value="">Selecciona un colaborador...</option>';
+        state.personas.slice().sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(p => {
+            const count = state.certificaciones.filter(c => c.userEmail === p.email).length;
+            if (count > 0) { // Solo mostrar si tiene algo que borrar
+                const opt = document.createElement('option');
+                opt.value = p.email; opt.textContent = `${p.nombre} (${count} registros)`;
+                colabSelect.appendChild(opt);
+            }
+        });
+        if(currentColabVal && currentColabVal !== "Cargando colaboradores...") colabSelect.value = currentColabVal;
+    }
+
     if(window.lucide) window.lucide.createIcons();
     renderDashboard();
 };
