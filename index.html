@@ -456,6 +456,21 @@
                         </div>
                     </div>
 
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mt-6">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <div class="bg-amber-100 p-2 rounded-xl text-amber-600">
+                                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                                </div>
+                                <h3 class="text-sm font-bold text-slate-800">Limpieza de Duplicados</h3>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-4">Escanea la base de datos buscando certificaciones idénticas asignadas a un mismo colaborador. Conservará el registro con mayor vigencia y eliminará las copias.</p>
+                            
+                            <button onclick="window.cleanDuplicates()" class="w-full bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm flex items-center justify-center">
+                                <i data-lucide="scan-search" class="w-4 h-4 mr-2"></i>
+                                Escanear y Limpiar BD
+                            </button>
+                        </div>
+                    
                     <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
                         <h4 class="font-bold text-slate-800 text-lg mb-6 flex items-center"><i data-lucide="user-plus" class="w-5 h-5 mr-2 text-indigo-500"></i> Crear Nuevo Administrador</h4>
                         <form id="form-create-admin" class="space-y-4">
