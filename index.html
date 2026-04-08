@@ -185,7 +185,7 @@
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- DASHBOARD -->
-            <section id="view-dashboard" class="view-section space-y-6">
+           <section id="view-dashboard" class="view-section space-y-6">
                 <div class="bg-white px-5 py-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-center gap-3 relative z-30 mb-6">
                     <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2 flex items-center">
                         <i data-lucide="filter" class="w-4 h-4 mr-1"></i> Filtros
@@ -211,7 +211,7 @@
                         <h3 class="text-3xl font-bold text-amber-500 mt-2" id="stat-warning">0</h3>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-red-500">
-                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest text-red-600">Vencidas / Huérfanas</p>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest text-red-600">Vencidas / Sin Identificar</p>
                         <h3 class="text-3xl font-bold text-red-600 mt-2" id="stat-expired">0</h3>
                     </div>
                 </div>
@@ -264,11 +264,18 @@
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden flex flex-col">
-                        <div class="p-5 border-b border-red-100 bg-red-50 flex justify-between items-center">
+                        <div class="p-5 border-b border-red-100 bg-red-50 flex flex-wrap justify-between items-center gap-4">
                             <h4 class="font-bold text-red-800 flex items-center">
                                 <i data-lucide="alert-circle" class="w-5 h-5 mr-2 text-red-600"></i> Alertas de Vencimiento
+                                <span class="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded-full ml-3" id="alerts-count">0</span>
                             </h4>
-                            <span class="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded-full" id="alerts-count">0</span>
+                            
+                            <select id="alert-status-filter" onchange="window.renderDashboard()" class="text-xs p-1.5 border border-red-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 bg-white font-bold text-red-800 cursor-pointer shadow-sm">
+                                <option value="">Todas las alertas</option>
+                                <option value="Por Vencer">Por Vencer</option>
+                                <option value="Vencida">Vencidas</option>
+                                <option value="Sin Identificar">Sin Identificar</option>
+                            </select>
                         </div>
                         <div class="overflow-x-auto max-h-[350px] custom-scrollbar">
                             <table class="w-full text-left border-collapse min-w-[950px]">
