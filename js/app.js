@@ -464,7 +464,7 @@ const renderDashboard = () => {
     const now = new Date();
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
 
-    llet dashData = state.certificaciones.map(c => {
+    let dashData = state.certificaciones.map(c => {
         const p = state.personas.find(per => per.email === c.userEmail);
         let nombreSugerido = c.tempName || c.userEmail.split('@')[0].replace('huerfano_', '').replace(/_/g, ' ');
         let emailSugerido = c.userEmail.startsWith('huerfano_') ? 'Sin definir' : c.userEmail;
