@@ -444,19 +444,42 @@
             <!-- SOPORTE -->
             <section id="view-support" class="view-section hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 h-fit">
-                        <h4 class="font-bold text-slate-800 text-lg mb-6 flex items-center"><i data-lucide="wrench" class="w-5 h-5 mr-2 text-red-500"></i> Herramientas de Mantenimiento</h4>
-                        <div class="p-6 bg-red-50 border border-red-100 rounded-xl">
-                            <h5 class="font-bold text-red-800 mb-2">Eliminación Masiva por Marca</h5>
-                            <p class="text-sm text-red-600 mb-4">Esta acción eliminará de la base de datos TODAS las certificaciones asociadas a la marca seleccionada.</p>
-                            <div class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-                                <select id="support-brand-select" class="p-3 bg-white border border-red-200 rounded-xl outline-none focus:ring-2 focus:ring-red-500 flex-1"><option value="">Selecciona una marca...</option></select>
-                                <button onclick="window.deleteCertificationsByBrand()" id="btn-delete-brand" class="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all flex items-center justify-center shadow-lg shadow-red-200 w-full md:w-auto"><i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Eliminar Registros</button>
+                    
+                    <div class="space-y-6">
+                        
+                        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                            <h4 class="font-bold text-slate-800 text-lg mb-6 flex items-center"><i data-lucide="wrench" class="w-5 h-5 mr-2 text-red-500"></i> Herramientas de Mantenimiento</h4>
+                            
+                            <div class="space-y-4">
+                                <div class="p-5 bg-red-50 border border-red-100 rounded-xl">
+                                    <h5 class="font-bold text-red-800 mb-2 flex items-center"><i data-lucide="calendar-x" class="w-4 h-4 mr-2"></i> Purgar por Año</h5>
+                                    <p class="text-xs text-red-600 mb-4">Elimina permanentemente los registros que expiran en un año específico.</p>
+                                    <div class="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-3">
+                                        <select id="support-year-select" class="p-2.5 bg-white border border-red-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm flex-1 cursor-pointer">
+                                            <option value="">Cargando años...</option>
+                                        </select>
+                                        <button onclick="window.deleteCertificationsByYear()" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-all shadow-sm whitespace-nowrap flex items-center justify-center">
+                                            <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Purgar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="p-5 bg-red-50 border border-red-100 rounded-xl">
+                                    <h5 class="font-bold text-red-800 mb-2 flex items-center"><i data-lucide="user-x" class="w-4 h-4 mr-2"></i> Purgar por Colaborador</h5>
+                                    <p class="text-xs text-red-600 mb-4">Elimina el historial de certificaciones de un usuario (Ej. Offboarding).</p>
+                                    <div class="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-3">
+                                        <select id="support-colab-select" class="p-2.5 bg-white border border-red-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm flex-1 cursor-pointer">
+                                            <option value="">Cargando colaboradores...</option>
+                                        </select>
+                                        <button onclick="window.deleteCertificationsByCollaborator()" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-all shadow-sm whitespace-nowrap flex items-center justify-center">
+                                            <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Purgar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mt-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                             <div class="flex items-center space-x-3 mb-2">
                                 <div class="bg-amber-100 p-2 rounded-xl text-amber-600">
                                     <i data-lucide="sparkles" class="w-5 h-5"></i>
@@ -465,13 +488,15 @@
                             </div>
                             <p class="text-xs text-slate-500 mb-4">Escanea la base de datos buscando certificaciones idénticas asignadas a un mismo colaborador. Conservará el registro con mayor vigencia y eliminará las copias.</p>
                             
-                            <button onclick="window.cleanDuplicates()" class="w-full bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm flex items-center justify-center">
+                            <button onclick="window.cleanDuplicates()" class="w-full bg-amber-500 text-white px-4 py-3 rounded-xl text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm flex items-center justify-center">
                                 <i data-lucide="scan-search" class="w-4 h-4 mr-2"></i>
-                                Escanear y Limpiar BD
+                                Escanear y Limpiar Base de Datos
                             </button>
                         </div>
-                    
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+
+                    </div>
+
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 h-fit">
                         <h4 class="font-bold text-slate-800 text-lg mb-6 flex items-center"><i data-lucide="user-plus" class="w-5 h-5 mr-2 text-indigo-500"></i> Crear Nuevo Administrador</h4>
                         <form id="form-create-admin" class="space-y-4">
                             <div>
@@ -494,6 +519,7 @@
                             </button>
                         </form>
                     </div>
+
                 </div>
             </section>
         </main>
