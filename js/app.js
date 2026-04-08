@@ -723,27 +723,58 @@ window.removeCert = (id) => {
     });
 };
 
-window.deleteCertificationsByBrand = async () => {
-    const brandSelect = document.getElementById('support-brand-select');
-    if(!brandSelect) return;
-    const brand = brandSelect.value;
-    if (!brand) return showNotification("Selecciona una marca primero", "error");
-    const certsToDelete = state.certificaciones.filter(c => c.marca === brand);
+window.deleteCertificationsByYear = async () => {
+    const yearSelect = document.getElementById('support-year-select');
+    if(!yearSelect) return;
+    const year = yearSelect.value;
+    if (!year) return showNotification("Selecciona un año primero", "error");
+    
+    const certsToDelete = state.certificaciones.filter(c => c.vencimiento && c.vencimiento.startsWith(year));
     const total = certsToDelete.length;
     if (total === 0) return showNotification("No hay registros", "error");
-    window.showConfirm("Eliminación Masiva", `Se eliminarán ${total} registros de "${brand}".`, async () => {
-        const btnDelete = document.getElementById('btn-delete-brand');
-        if(btnDelete) { btnDelete.disabled = true; btnDelete.classList.add('opacity-50'); }
-        const chunkSize = 20; let deletedCount = 0;
-        for (let i = 0; i < total; i += chunkSize) {
-            const chunk = certsToDelete.slice(i, i + chunkSize);
-            const batch = writeBatch(db);
-            chunk.forEach(cert => batch.delete(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id)));
-            try { await batch.commit(); deletedCount += chunk.length; } 
-            catch (error) { showNotification("Error al eliminar", "error"); break; }
-        }
-        showNotification(`Se eliminaron ${deletedCount} registros.`, "success");
-        if(btnDelete) { btnDelete.disabled = false; btnDelete.classList.remove('opacity-50'); }
+    
+    window.showConfirm("Eliminación Masiva por Año", `Se eliminarán permanentemente ${total} registros que vencen en el año ${year}. Esta acción no se puede deshacer.`, async () => {
+        showLoader("Eliminando...");
+        const chunkSize = 200; let deletedCount = 0;
+        try {
+            for (let i = 0; i < total; i += chunkSize) {
+                const chunk = certsToDelete.slice(i, i + chunkSize);
+                const batch = writeBatch(db);
+                chunk.forEach(cert => batch.delete(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id)));
+                await batch.commit(); deletedCount += chunk.length;
+            }
+            showNotification(`Se eliminaron ${deletedCount} registros del año ${year}.`, "success");
+            yearSelect.value = "";
+        } catch (error) { showNotification("Error al eliminar", "error"); } finally { hideLoader(); }
+    });
+};
+
+window.deleteCertificationsByCollaborator = async () => {
+    const colabSelect = document.getElementById('support-colab-select');
+    if(!colabSelect) return;
+    const email = colabSelect.value;
+    if (!email) return showNotification("Selecciona un colaborador primero", "error");
+    
+    const certsToDelete = state.certificaciones.filter(c => c.userEmail === email);
+    const total = certsToDelete.length;
+    if (total === 0) return showNotification("No hay registros", "error");
+    
+    const persona = state.personas.find(p => p.email === email);
+    const nombre = persona ? persona.nombre : email;
+
+    window.showConfirm("Eliminación por Colaborador", `Se eliminará todo el historial (${total} registros) perteneciente a ${nombre}. Esta acción no inhabilitará al usuario, solo borrará sus certificaciones. ¿Continuar?`, async () => {
+        showLoader("Eliminando...");
+        const chunkSize = 200; let deletedCount = 0;
+        try {
+            for (let i = 0; i < total; i += chunkSize) {
+                const chunk = certsToDelete.slice(i, i + chunkSize);
+                const batch = writeBatch(db);
+                chunk.forEach(cert => batch.delete(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'certificaciones', cert.id)));
+                await batch.commit(); deletedCount += chunk.length;
+            }
+            showNotification(`Se eliminó el historial de ${nombre}.`, "success");
+            colabSelect.value = "";
+        } catch (error) { showNotification("Error al eliminar", "error"); } finally { hideLoader(); }
     });
 };
 
