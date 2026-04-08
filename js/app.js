@@ -515,6 +515,7 @@ const renderDashboard = () => {
             alertsHTML += `<tr class="${stTxt === 'Huérfano' ? 'bg-red-50/50' : 'hover:bg-slate-50'} transition-colors">
                 <td class="px-6 py-3 text-xs font-bold text-slate-500">${item.pais}</td>
                 <td class="px-6 py-3 font-semibold text-slate-800">${item.colaborador}</td>
+                <td class="px-6 py-3 text-xs text-slate-500">${item.userEmail}</td>
                 <td class="px-6 py-3 text-sm text-slate-600"><span class="font-bold text-xs mr-1 text-slate-400">[${item.marca}]</span> ${item.certificacion}</td>
                 <td class="px-6 py-3 text-center text-xs font-mono text-slate-500">${item.vencimiento}</td>
                 <td class="px-6 py-3 text-right"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${stCol}">${stTxt}</span></td>
