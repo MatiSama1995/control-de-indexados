@@ -501,7 +501,10 @@ const renderDashboard = () => {
     const now = new Date();
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
 
-    // NUEVO: Limpiador extremo para eliminar dobles espacios y saltos de línea heredados de Excel
+    // Capturamos el valor del nuevo filtro de alertas
+    const alertFilterEl = document.getElementById('alert-status-filter');
+    const activeAlertFilter = alertFilterEl ? alertFilterEl.value : "";
+
     const cleanStr = (s) => {
         if (s === null || s === undefined || s === '') return 'Sin definir';
         return String(s).replace(/\s+/g, ' ').trim();
@@ -514,7 +517,6 @@ const renderDashboard = () => {
 
         return {
             ...c,
-            // Aplicamos el limpiador a todos los datos críticos
             colaborador: cleanStr(p ? p.nombre : nombreSugerido),
             userEmail: cleanStr(p ? p.email : emailSugerido),
             pais: cleanStr(p ? p.pais : c.detectedCountry),
@@ -547,13 +549,14 @@ const renderDashboard = () => {
 
     let alertsHTML = '';
     let generalHTML = '';
-    let alertsCount = 0;
+    let alertsCount = 0; // Este contador siempre mostrará el total de alertas
 
     filteredData.forEach(item => {
         let stTxt = "Vigente", stCol = "bg-green-100 text-green-700 border border-green-200";
         const vDate = new Date(item.vencimiento);
         
-        if (item.isMiss) { stTxt = "Huérfano"; stCol = "bg-red-600 text-white border border-red-700"; } 
+        // CAMBIO: 'Huérfano' ahora es 'Sin Identificar'
+        if (item.isMiss) { stTxt = "Sin Identificar"; stCol = "bg-red-600 text-white border border-red-700"; } 
         else if (vDate < now) { stTxt = "Vencida"; stCol = "bg-red-100 text-red-700 border border-red-200"; } 
         else if (vDate < warningLimit) { stTxt = "Por Vencer"; stCol = "bg-amber-100 text-amber-700 border border-amber-200"; }
 
@@ -581,16 +584,21 @@ const renderDashboard = () => {
             <td class="px-6 py-4"><div class="text-sm font-medium text-slate-700">${item.certificacion}</div><div class="text-[11px] mt-1 flex items-center ${stTxt === 'Vigente' ? 'text-green-600' : (stTxt === 'Por Vencer' ? 'text-amber-600' : 'text-red-600')}"><i data-lucide="calendar" class="w-3 h-3 mr-1"></i> Expira: ${item.vencimiento}</div></td>
         </tr>`;
 
-        if (stTxt === 'Vencida' || stTxt === 'Por Vencer' || stTxt === 'Huérfano') {
-            alertsCount++;
-            alertsHTML += `<tr class="${stTxt === 'Huérfano' ? 'bg-red-50/50' : 'hover:bg-slate-50'} transition-colors">
-                <td class="px-6 py-3 text-xs font-bold text-slate-500">${item.pais}</td>
-                <td class="px-6 py-3 font-semibold text-slate-800">${item.colaborador}</td>
-                <td class="px-6 py-3 text-xs text-slate-500 font-mono">${item.userEmail}</td>
-                <td class="px-6 py-3 text-sm text-slate-600"><span class="font-bold text-xs mr-1 text-slate-400">[${item.marca}]</span> ${item.certificacion}</td>
-                <td class="px-6 py-3 text-center text-xs font-mono text-slate-500">${item.vencimiento}</td>
-                <td class="px-6 py-3 text-right"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${stCol}">${stTxt}</span></td>
-            </tr>`;
+        // Lógica de Alertas (con Filtro Aplicado)
+        if (stTxt === 'Vencida' || stTxt === 'Por Vencer' || stTxt === 'Sin Identificar') {
+            alertsCount++; // Sumamos al contador global (la burbujita roja)
+            
+            // Solo lo dibujamos en la tabla si coincide con el filtro elegido (o si está en "Todas")
+            if (activeAlertFilter === "" || stTxt === activeAlertFilter) {
+                alertsHTML += `<tr class="${stTxt === 'Sin Identificar' ? 'bg-red-50/50' : 'hover:bg-slate-50'} transition-colors">
+                    <td class="px-6 py-3 text-xs font-bold text-slate-500">${item.pais}</td>
+                    <td class="px-6 py-3 font-semibold text-slate-800">${item.colaborador}</td>
+                    <td class="px-6 py-3 text-xs text-slate-500 font-mono">${item.userEmail}</td>
+                    <td class="px-6 py-3 text-sm text-slate-600"><span class="font-bold text-xs mr-1 text-slate-400">[${item.marca}]</span> ${item.certificacion}</td>
+                    <td class="px-6 py-3 text-center text-xs font-mono text-slate-500">${item.vencimiento}</td>
+                    <td class="px-6 py-3 text-right"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${stCol}">${stTxt}</span></td>
+                </tr>`;
+            }
         }
     });
 
@@ -607,7 +615,7 @@ const renderDashboard = () => {
     if(statWarning) statWarning.innerText = stats.warning;
     if(statExpired) statExpired.innerText = stats.expired;
     if(alertsCountEl) alertsCountEl.innerText = alertsCount;
-    if(dashAlertsTbody) dashAlertsTbody.innerHTML = alertsHTML || `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay alertas de vencimiento.</td></tr>`;
+    if(dashAlertsTbody) dashAlertsTbody.innerHTML = alertsHTML || `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay alertas de este tipo.</td></tr>`;
     if(dashGeneralTbody) dashGeneralTbody.innerHTML = generalHTML || `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 text-sm italic">No se encontraron registros.</td></tr>`;
 
     renderCharts(chartDataStatus, chartDataColabs, chartDataCountries, chartDataAreas, chartDataMarcas);
@@ -663,7 +671,6 @@ const renderDashboard = () => {
                         ${options.length === 0 ? `<li class="px-4 py-3 text-xs text-slate-400 italic text-center">Sin opciones</li>` : ''}
                         ${options.map(opt => {
                             const isSelected = isArray ? currentVal.includes(opt) : currentVal === opt;
-                            // NUEVO: Usamos encodeURIComponent para proteger el texto al mandarlo al clic
                             return `
                             <li class="px-4 py-2 text-[11px] flex items-center justify-between hover:bg-blue-50 cursor-pointer ${isSelected ? 'bg-blue-50 text-blue-700 font-bold border-l-2 border-blue-600' : 'text-slate-600 border-l-2 border-transparent'}" 
                                 onclick="window.setDashFilterSafe('${config.id}', '${encodeURIComponent(opt)}', ${config.multi})">
@@ -679,6 +686,9 @@ const renderDashboard = () => {
         if(window.lucide) window.lucide.createIcons();
     }
 };
+
+// Exponemos la función globalmente para que el dropdown del HTML pueda llamarla al cambiar
+window.renderDashboard = renderDashboard;
 
 const renderCharts = (statusData, colabsData, countriesData, areasData, marcasData) => {
     const chartStatusEl = document.getElementById('chartStatus');
