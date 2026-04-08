@@ -569,6 +569,11 @@ const renderDashboard = () => {
 
     const filterContainer = document.getElementById('dash-filters-container');
     if(filterContainer) {
+        // 1. Capturamos qué menú estaba abierto antes de redibujar
+        let openMenuId = null;
+        const openMenu = filterContainer.querySelector('.filter-dropdown-menu:not(.hidden)');
+        if (openMenu) openMenuId = openMenu.id;
+
         let filtersHTML = '';
         filterConfigs.forEach(config => {
             const validForThis = dashData.filter(item => {
@@ -596,6 +601,9 @@ const renderDashboard = () => {
             }
 
             const pillClass = isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+            
+            // 2. Si este menú era el que estaba abierto, no le ponemos la clase 'hidden'
+            const menuClass = (openMenuId === `menu-${config.id}`) ? '' : 'hidden';
 
             filtersHTML += `
             <div class="relative filter-dropdown-container">
@@ -607,8 +615,8 @@ const renderDashboard = () => {
                     </div>
                     ${isActive ? `<div class="pr-3 pl-1.5 py-1.5 border-l ${isArray ? 'border-blue-500' : 'border-slate-300'} hover:text-red-200 cursor-pointer" onclick="window.clearSingleFilter('${config.id}')" title="Borrar filtro"><i data-lucide="x" class="w-3 h-3"></i></div>` : ''}
                 </div>
-                <div id="menu-${config.id}" class="filter-dropdown-menu hidden absolute top-full left-0 mt-2 w-64 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
-                    ${config.search ? `<div class="p-2 border-b bg-slate-50 sticky top-0 z-10"><input type="text" placeholder="Buscar..." class="w-full p-2 text-xs border rounded-lg outline-none" oninput="window.filterDropdownSearch(this, 'list-${config.id}')"></div>` : ''}
+                <div id="menu-${config.id}" class="filter-dropdown-menu ${menuClass} absolute top-full left-0 mt-2 w-64 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
+                    ${config.search ? `<div class="p-2 border-b bg-slate-50 sticky top-0 z-10"><input type="text" placeholder="Buscar..." class="w-full p-2 text-xs border rounded-lg outline-none" oninput="window.filterDropdownSearch(this, 'list-${config.id}')" onclick="event.stopPropagation()"></div>` : ''}
                     <ul id="list-${config.id}" class="max-h-60 overflow-y-auto py-1 custom-scrollbar">
                         ${options.length === 0 ? `<li class="px-4 py-3 text-xs text-slate-400 italic text-center">Sin opciones</li>` : ''}
                         ${options.map(opt => {
