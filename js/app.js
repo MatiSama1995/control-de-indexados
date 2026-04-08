@@ -471,7 +471,7 @@ const renderDashboard = () => {
 
         return {
             ...c,
-            // Forzamos String() y trim() para evitar el error de números de Excel y espacios ocultos
+            // Forzamos String() y trim() para evitar el error de números de Excel
             colaborador: String(p ? p.nombre : nombreSugerido).trim(),
             userEmail: String(p ? p.email : emailSugerido).trim(),
             pais: String(p ? p.pais : (c.detectedCountry || 'Sin definir')).trim(),
@@ -571,7 +571,6 @@ const renderDashboard = () => {
 
     const filterContainer = document.getElementById('dash-filters-container');
     if(filterContainer) {
-        // 1. Capturamos qué menú estaba abierto antes de redibujar
         let openMenuId = null;
         const openMenu = filterContainer.querySelector('.filter-dropdown-menu:not(.hidden)');
         if (openMenu) openMenuId = openMenu.id;
@@ -603,8 +602,6 @@ const renderDashboard = () => {
             }
 
             const pillClass = isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
-            
-            // 2. Si este menú era el que estaba abierto, no le ponemos la clase 'hidden'
             const menuClass = (openMenuId === `menu-${config.id}`) ? '' : 'hidden';
 
             filtersHTML += `
