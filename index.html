@@ -216,51 +216,32 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-1 flex flex-col">
-                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm">
-                            <i data-lucide="activity" class="w-4 h-4 mr-2 text-indigo-500"></i> Estado Global
-                        </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm"><i data-lucide="activity" class="w-4 h-4 mr-2 text-indigo-500"></i> Estado Global</h4>
                         <div class="flex-1 min-h-[220px] relative"><canvas id="chartStatus"></canvas></div>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2 flex flex-col">
-                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm">
-                            <i data-lucide="award" class="w-4 h-4 mr-2 text-blue-500"></i> Top Colaboradores Certificados
-                        </h4>
-                        <div class="flex-1 min-h-[220px] relative"><canvas id="chartColabs"></canvas></div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm"><i data-lucide="briefcase" class="w-4 h-4 mr-2 text-fuchsia-500"></i> Distribución por Área</h4>
+                        <div class="flex-1 min-h-[220px] relative"><canvas id="chartAreas"></canvas></div>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-1 flex flex-col">
-                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm">
-                            <i data-lucide="globe-2" class="w-4 h-4 mr-2 text-teal-500"></i> Distribución País
-                        </h4>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm"><i data-lucide="globe-2" class="w-4 h-4 mr-2 text-teal-500"></i> Distribución por País</h4>
                         <div class="flex-1 min-h-[220px] relative"><canvas id="chartCountries"></canvas></div>
                     </div>
                 </div>
-
-                <div class="space-y-6">
-                    <div class="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden flex flex-col">
-                        <div class="p-5 border-b border-red-100 bg-red-50 flex justify-between items-center">
-                            <h4 class="font-bold text-red-800 flex items-center">
-                                <i data-lucide="alert-circle" class="w-5 h-5 mr-2 text-red-600"></i> Alertas de Vencimiento
-                            </h4>
-                            <span class="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded-full" id="alerts-count">0</span>
-                        </div>
-                        <div class="overflow-x-auto max-h-[350px] custom-scrollbar">
-                            <table class="w-full text-left border-collapse min-w-[800px]">
-                                <thead class="bg-white sticky top-0 z-10 shadow-sm text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    <tr>
-                                        <th class="px-6 py-4">País</th>
-                                        <th class="px-6 py-4">Colaborador</th>
-                                        <th class="px-6 py-4">Certificación</th>
-                                        <th class="px-6 py-4 text-center">Vencimiento</th>
-                                        <th class="px-6 py-4 text-right">Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="dash-alerts-tbody" class="divide-y divide-slate-100 text-sm"></tbody>
-                            </table>
-                        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm"><i data-lucide="shield" class="w-4 h-4 mr-2 text-emerald-500"></i> Certificaciones por Fabricante</h4>
+                        <div class="flex-1 min-h-[220px] relative"><canvas id="chartMarcas"></canvas></div>
                     </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                        <h4 class="font-bold text-slate-800 mb-2 flex items-center text-sm"><i data-lucide="award" class="w-4 h-4 mr-2 text-blue-500"></i> Cantidad Individual (Top Colaboradores)</h4>
+                        <div class="flex-1 min-h-[220px] relative"><canvas id="chartColabs"></canvas></div>
+                    </div>
+                </div>
 
+                <div class="space-y-6 mt-6">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
                         <div class="p-5 border-b border-slate-100 bg-slate-50">
                             <h4 class="font-bold text-slate-800 flex items-center">
@@ -278,6 +259,29 @@
                                     </tr>
                                 </thead>
                                 <tbody id="dash-general-tbody" class="divide-y divide-slate-100 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden flex flex-col">
+                        <div class="p-5 border-b border-red-100 bg-red-50 flex justify-between items-center">
+                            <h4 class="font-bold text-red-800 flex items-center">
+                                <i data-lucide="alert-circle" class="w-5 h-5 mr-2 text-red-600"></i> Alertas de Vencimiento y Huérfanos
+                            </h4>
+                            <span class="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded-full" id="alerts-count">0</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-[350px] custom-scrollbar">
+                            <table class="w-full text-left border-collapse min-w-[800px]">
+                                <thead class="bg-white sticky top-0 z-10 shadow-sm text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <tr>
+                                        <th class="px-6 py-4">País</th>
+                                        <th class="px-6 py-4">Colaborador</th>
+                                        <th class="px-6 py-4">Certificación</th>
+                                        <th class="px-6 py-4 text-center">Vencimiento</th>
+                                        <th class="px-6 py-4 text-right">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-alerts-tbody" class="divide-y divide-slate-100 text-sm"></tbody>
                             </table>
                         </div>
                     </div>
