@@ -555,8 +555,8 @@ const renderDashboard = () => {
         let stTxt = "Vigente", stCol = "bg-green-100 text-green-700 border border-green-200";
         const vDate = new Date(item.vencimiento);
         
-        // CAMBIO: 'Huérfano' ahora es 'Sin Identificar'
-        if (item.isMiss) { stTxt = "Sin Identificar"; stCol = "bg-red-600 text-white border border-red-700"; } 
+        // CAMBIO: Ahora usamos 'Sin Asignar'
+        if (item.isMiss) { stTxt = "Sin Asignar"; stCol = "bg-red-600 text-white border border-red-700"; } 
         else if (vDate < now) { stTxt = "Vencida"; stCol = "bg-red-100 text-red-700 border border-red-200"; } 
         else if (vDate < warningLimit) { stTxt = "Por Vencer"; stCol = "bg-amber-100 text-amber-700 border border-amber-200"; }
 
@@ -584,19 +584,19 @@ const renderDashboard = () => {
             <td class="px-6 py-4"><div class="text-sm font-medium text-slate-700">${item.certificacion}</div><div class="text-[11px] mt-1 flex items-center ${stTxt === 'Vigente' ? 'text-green-600' : (stTxt === 'Por Vencer' ? 'text-amber-600' : 'text-red-600')}"><i data-lucide="calendar" class="w-3 h-3 mr-1"></i> Expira: ${item.vencimiento}</div></td>
         </tr>`;
 
-        // Lógica de Alertas (con Filtro Aplicado)
-        if (stTxt === 'Vencida' || stTxt === 'Por Vencer' || stTxt === 'Sin Identificar') {
+        // Lógica de Alertas (con Filtro Aplicado y whitespace-nowrap)
+        if (stTxt === 'Vencida' || stTxt === 'Por Vencer' || stTxt === 'Sin Asignar') {
             alertsCount++; // Sumamos al contador global (la burbujita roja)
             
             // Solo lo dibujamos en la tabla si coincide con el filtro elegido (o si está en "Todas")
             if (activeAlertFilter === "" || stTxt === activeAlertFilter) {
-                alertsHTML += `<tr class="${stTxt === 'Sin Identificar' ? 'bg-red-50/50' : 'hover:bg-slate-50'} transition-colors">
+                alertsHTML += `<tr class="${stTxt === 'Sin Asignar' ? 'bg-red-50/50' : 'hover:bg-slate-50'} transition-colors">
                     <td class="px-6 py-3 text-xs font-bold text-slate-500">${item.pais}</td>
                     <td class="px-6 py-3 font-semibold text-slate-800">${item.colaborador}</td>
                     <td class="px-6 py-3 text-xs text-slate-500 font-mono">${item.userEmail}</td>
                     <td class="px-6 py-3 text-sm text-slate-600"><span class="font-bold text-xs mr-1 text-slate-400">[${item.marca}]</span> ${item.certificacion}</td>
                     <td class="px-6 py-3 text-center text-xs font-mono text-slate-500">${item.vencimiento}</td>
-                    <td class="px-6 py-3 text-right"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${stCol}">${stTxt}</span></td>
+                    <td class="px-6 py-3 text-right"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm whitespace-nowrap ${stCol}">${stTxt}</span></td>
                 </tr>`;
             }
         }
@@ -689,6 +689,7 @@ const renderDashboard = () => {
 
 // Exponemos la función globalmente para que el dropdown del HTML pueda llamarla al cambiar
 window.renderDashboard = renderDashboard;
+
 
 const renderCharts = (statusData, colabsData, countriesData, areasData, marcasData) => {
     const chartStatusEl = document.getElementById('chartStatus');
