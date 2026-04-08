@@ -461,7 +461,7 @@ const updateUI = () => {
         });
         s.value = current;
     }
-
+ 
     // --- NUEVO: Llenar Select de Años para Soporte ---
     const yearSelect = document.getElementById('support-year-select');
     if (yearSelect) {
