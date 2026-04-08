@@ -464,18 +464,20 @@ const renderDashboard = () => {
     const now = new Date();
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
 
-    let dashData = state.certificaciones.map(c => {
+    llet dashData = state.certificaciones.map(c => {
         const p = state.personas.find(per => per.email === c.userEmail);
         let nombreSugerido = c.tempName || c.userEmail.split('@')[0].replace('huerfano_', '').replace(/_/g, ' ');
         let emailSugerido = c.userEmail.startsWith('huerfano_') ? 'Sin definir' : c.userEmail;
 
         return {
             ...c,
-            colaborador: p ? p.nombre : nombreSugerido,
-            userEmail: p ? p.email : emailSugerido,
-            pais: p ? p.pais : (c.detectedCountry || 'Sin definir'),
-            area: p ? p.area : 'Sin definir',
-            certificacion: c.nombre,
+            // Forzamos String() y trim() para evitar el error de números de Excel y espacios ocultos
+            colaborador: String(p ? p.nombre : nombreSugerido).trim(),
+            userEmail: String(p ? p.email : emailSugerido).trim(),
+            pais: String(p ? p.pais : (c.detectedCountry || 'Sin definir')).trim(),
+            area: String(p ? p.area : 'Sin definir').trim(),
+            certificacion: String(c.nombre || 'Sin definir').trim(),
+            marca: String(c.marca || 'Sin definir').trim(),
             activo: p ? p.activo : false,
             isMiss: !p
         };
