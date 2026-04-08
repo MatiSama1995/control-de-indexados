@@ -442,11 +442,17 @@ const renderDashboard = () => {
 
     let dashData = state.certificaciones.map(c => {
         const p = state.personas.find(per => per.email === c.userEmail);
+        
+        // Lógica visual para correos y nombres huérfanos
+        let displayEmail = c.userEmail;
+        if (c.userEmail.startsWith('huerfano_')) displayEmail = 'Sin definir';
+
         return {
             ...c,
-            colaborador: p ? p.nombre : (c.tempName || 'Detectado'),
-            pais: p ? p.pais : (c.detectedCountry || 'N/A'),
-            area: p ? p.area : 'Sin Definir',
+            colaborador: p ? p.nombre : (c.tempName || 'Sin definir'),
+            userEmail: p ? p.email : displayEmail,
+            pais: p ? p.pais : (c.detectedCountry || 'Sin definir'),
+            area: p ? p.area : 'Sin definir',
             certificacion: c.nombre,
             activo: p ? p.activo : false,
             isMiss: !p
@@ -464,6 +470,8 @@ const renderDashboard = () => {
     let chartDataStatus = { 'Vigente': 0, 'Por Vencer': 0, 'Vencida': 0 };
     let chartDataColabs = {};
     let chartDataCountries = {};
+    let chartDataAreas = {};
+    let chartDataMarcas = {};
 
     let alertsHTML = '';
     let generalHTML = '';
@@ -489,12 +497,15 @@ const renderDashboard = () => {
             else if (stTxt === 'Por Vencer') chartDataStatus['Por Vencer']++;
             else chartDataStatus['Vencida']++;
             if (item.colaborador) chartDataColabs[item.colaborador] = (chartDataColabs[item.colaborador] || 0) + 1;
-            if (item.pais && item.pais !== 'N/A') chartDataCountries[item.pais] = (chartDataCountries[item.pais] || 0) + 1;
+            if (item.pais && item.pais !== 'N/A' && item.pais !== 'Sin definir') chartDataCountries[item.pais] = (chartDataCountries[item.pais] || 0) + 1;
+            if (item.area && item.area !== 'N/A' && item.area !== 'Sin definir') chartDataAreas[item.area] = (chartDataAreas[item.area] || 0) + 1;
+            if (item.marca) chartDataMarcas[item.marca] = (chartDataMarcas[item.marca] || 0) + 1;
         }
 
+        // Tabla General con datos limpios
         generalHTML += `<tr class="hover:bg-slate-50 transition-colors">
             <td class="px-6 py-4 text-center"><span class="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg uppercase tracking-widest">${item.pais}</span></td>
-            <td class="px-6 py-4"><div class="font-bold text-slate-800">${item.colaborador}</div><div class="text-[11px] text-slate-500 mt-0.5 flex items-center"><i data-lucide="mail" class="w-3 h-3 mr-1"></i> ${item.isMiss ? 'N/A' : item.userEmail} <span class="mx-2 text-slate-300">|</span> <i data-lucide="briefcase" class="w-3 h-3 mr-1"></i> ${item.area}</div></td>
+            <td class="px-6 py-4"><div class="font-bold text-slate-800">${item.colaborador}</div><div class="text-[11px] text-slate-500 mt-0.5 flex items-center"><i data-lucide="mail" class="w-3 h-3 mr-1"></i> ${item.userEmail} <span class="mx-2 text-slate-300">|</span> <i data-lucide="briefcase" class="w-3 h-3 mr-1"></i> ${item.area}</div></td>
             <td class="px-6 py-4"><span class="font-bold text-slate-700 text-xs">${item.marca}</span></td>
             <td class="px-6 py-4"><div class="text-sm font-medium text-slate-700">${item.certificacion}</div><div class="text-[11px] mt-1 flex items-center ${stTxt === 'Vigente' ? 'text-green-600' : (stTxt === 'Por Vencer' ? 'text-amber-600' : 'text-red-600')}"><i data-lucide="calendar" class="w-3 h-3 mr-1"></i> Expira: ${item.vencimiento}</div></td>
         </tr>`;
@@ -527,8 +538,9 @@ const renderDashboard = () => {
     if(dashAlertsTbody) dashAlertsTbody.innerHTML = alertsHTML || `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay alertas de vencimiento.</td></tr>`;
     if(dashGeneralTbody) dashGeneralTbody.innerHTML = generalHTML || `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 text-sm italic">No se encontraron registros.</td></tr>`;
 
-    renderCharts(chartDataStatus, chartDataColabs, chartDataCountries);
+    renderCharts(chartDataStatus, chartDataColabs, chartDataCountries, chartDataAreas, chartDataMarcas);
 
+    // [El código del filtro dropdown se mantiene igual, no lo modifiques, déjalo aquí como está]
     const filterContainer = document.getElementById('dash-filters-container');
     if(filterContainer) {
         let filtersHTML = '';
@@ -567,39 +579,66 @@ const renderDashboard = () => {
     }
 };
 
-const renderCharts = (statusData, colabsData, countriesData) => {
+const renderCharts = (statusData, colabsData, countriesData, areasData, marcasData) => {
     const chartStatusEl = document.getElementById('chartStatus');
     const chartColabsEl = document.getElementById('chartColabs');
     const chartCountriesEl = document.getElementById('chartCountries');
-    if (!chartStatusEl || !chartColabsEl || !chartCountriesEl || !window.Chart) return;
+    const chartAreasEl = document.getElementById('chartAreas');
+    const chartMarcasEl = document.getElementById('chartMarcas');
+    
+    if (!window.Chart) return;
 
     if (state.charts.status) state.charts.status.destroy();
     if (state.charts.colabs) state.charts.colabs.destroy();
     if (state.charts.countries) state.charts.countries.destroy();
+    if (state.charts.areas) state.charts.areas.destroy();
+    if (state.charts.marcas) state.charts.marcas.destroy();
 
     Chart.defaults.font.family = "'Inter', sans-serif";
     Chart.defaults.color = '#64748b';
 
-    state.charts.status = new Chart(chartStatusEl, {
-        type: 'doughnut',
-        data: { labels: ['Vigente', 'Por Vencer', 'Vencida'], datasets: [{ data: [statusData['Vigente'], statusData['Por Vencer'], statusData['Vencida']], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 2, hoverOffset: 4 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { size: 10 } } } } }
-    });
+    if (chartStatusEl) {
+        state.charts.status = new Chart(chartStatusEl, {
+            type: 'doughnut',
+            data: { labels: ['Vigente', 'Por Vencer', 'Vencida'], datasets: [{ data: [statusData['Vigente'], statusData['Por Vencer'], statusData['Vencida']], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 2, hoverOffset: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { size: 10 } } } } }
+        });
+    }
 
-    const sortedColabs = Object.entries(colabsData).sort((a, b) => b[1] - a[1]).slice(0, 8); 
-    state.charts.colabs = new Chart(chartColabsEl, {
-        type: 'bar',
-        data: { labels: sortedColabs.map(c => c[0]), datasets: [{ label: 'Certificaciones', data: sortedColabs.map(c => c[1]), backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.6 }] },
-        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: true, color: '#f1f5f9' }, beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
-    });
+    if (chartColabsEl) {
+        const sortedColabs = Object.entries(colabsData).sort((a, b) => b[1] - a[1]).slice(0, 8); 
+        state.charts.colabs = new Chart(chartColabsEl, {
+            type: 'bar',
+            data: { labels: sortedColabs.map(c => c[0]), datasets: [{ label: 'Certificaciones', data: sortedColabs.map(c => c[1]), backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.6 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: true, color: '#f1f5f9' }, beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+        });
+    }
 
-    state.charts.countries = new Chart(chartCountriesEl, {
-        type: 'doughnut',
-        data: { labels: Object.keys(countriesData), datasets: [{ data: Object.values(countriesData), backgroundColor: ['#6366f1', '#14b8a6', '#8b5cf6', '#ec4899', '#f97316'], borderWidth: 2, hoverOffset: 4 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { size: 10 } } } } }
-    });
+    if (chartCountriesEl) {
+        state.charts.countries = new Chart(chartCountriesEl, {
+            type: 'doughnut',
+            data: { labels: Object.keys(countriesData), datasets: [{ data: Object.values(countriesData), backgroundColor: ['#14b8a6', '#8b5cf6', '#ec4899', '#f97316'], borderWidth: 2, hoverOffset: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { size: 10 } } } } }
+        });
+    }
+
+    if (chartAreasEl) {
+        state.charts.areas = new Chart(chartAreasEl, {
+            type: 'pie',
+            data: { labels: Object.keys(areasData), datasets: [{ data: Object.values(areasData), backgroundColor: ['#d946ef', '#0ea5e9', '#84cc16', '#f43f5e', '#64748b'], borderWidth: 2, hoverOffset: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: { size: 10 } } } } }
+        });
+    }
+
+    if (chartMarcasEl) {
+        const sortedMarcas = Object.entries(marcasData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        state.charts.marcas = new Chart(chartMarcasEl, {
+            type: 'bar',
+            data: { labels: sortedMarcas.map(c => c[0]), datasets: [{ label: 'Total', data: sortedMarcas.map(c => c[1]), backgroundColor: '#10b981', borderRadius: 4, barPercentage: 0.5 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
 };
-
 window.toggleUser = async (email, estadoActual) => {
     showLoader("Actualizando...");
     try { await updateDoc(doc(db, 'artifacts', firestoreAppId, 'public', 'data', 'personas', email), { activo: !estadoActual }); showNotification("Usuario actualizado", "success"); } 
