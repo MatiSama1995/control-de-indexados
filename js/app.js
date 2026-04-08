@@ -271,6 +271,12 @@ window.setDashFilter = (key, value, isMulti) => {
     renderDashboard();
 };
 
+// Función traductora para recibir el texto de forma 100% segura
+window.setDashFilterSafe = (key, encodedValue, isMulti) => {
+    const decodedValue = decodeURIComponent(encodedValue);
+    window.setDashFilter(key, decodedValue, isMulti);
+};
+
 window.clearSingleFilter = (key) => {
     activeDashFilters[key] = Array.isArray(activeDashFilters[key]) ? [] : null;
     renderDashboard();
@@ -464,6 +470,12 @@ const renderDashboard = () => {
     const now = new Date();
     const warningLimit = new Date(); warningLimit.setDate(now.getDate() + 90);
 
+    // NUEVO: Limpiador extremo para eliminar dobles espacios y saltos de línea heredados de Excel
+    const cleanStr = (s) => {
+        if (s === null || s === undefined || s === '') return 'Sin definir';
+        return String(s).replace(/\s+/g, ' ').trim();
+    };
+
     let dashData = state.certificaciones.map(c => {
         const p = state.personas.find(per => per.email === c.userEmail);
         let nombreSugerido = c.tempName || c.userEmail.split('@')[0].replace('huerfano_', '').replace(/_/g, ' ');
@@ -471,13 +483,13 @@ const renderDashboard = () => {
 
         return {
             ...c,
-            // Forzamos String() y trim() para evitar el error de números de Excel
-            colaborador: String(p ? p.nombre : nombreSugerido).trim(),
-            userEmail: String(p ? p.email : emailSugerido).trim(),
-            pais: String(p ? p.pais : (c.detectedCountry || 'Sin definir')).trim(),
-            area: String(p ? p.area : 'Sin definir').trim(),
-            certificacion: String(c.nombre || 'Sin definir').trim(),
-            marca: String(c.marca || 'Sin definir').trim(),
+            // Aplicamos el limpiador a todos los datos críticos
+            colaborador: cleanStr(p ? p.nombre : nombreSugerido),
+            userEmail: cleanStr(p ? p.email : emailSugerido),
+            pais: cleanStr(p ? p.pais : c.detectedCountry),
+            area: cleanStr(p ? p.area : ''),
+            certificacion: cleanStr(c.nombre),
+            marca: cleanStr(c.marca),
             activo: p ? p.activo : false,
             isMiss: !p
         };
@@ -620,9 +632,10 @@ const renderDashboard = () => {
                         ${options.length === 0 ? `<li class="px-4 py-3 text-xs text-slate-400 italic text-center">Sin opciones</li>` : ''}
                         ${options.map(opt => {
                             const isSelected = isArray ? currentVal.includes(opt) : currentVal === opt;
+                            // NUEVO: Usamos encodeURIComponent para proteger el texto al mandarlo al clic
                             return `
                             <li class="px-4 py-2 text-[11px] flex items-center justify-between hover:bg-blue-50 cursor-pointer ${isSelected ? 'bg-blue-50 text-blue-700 font-bold border-l-2 border-blue-600' : 'text-slate-600 border-l-2 border-transparent'}" 
-                                onclick="window.setDashFilter('${config.id}', \`${opt.replace(/`/g, "\\`")}\`, ${config.multi})">
+                                onclick="window.setDashFilterSafe('${config.id}', '${encodeURIComponent(opt)}', ${config.multi})">
                                 ${opt}
                                 ${isSelected ? '<i data-lucide="check" class="w-3 h-3"></i>' : ''}
                             </li>`;
