@@ -443,14 +443,16 @@ const renderDashboard = () => {
     let dashData = state.certificaciones.map(c => {
         const p = state.personas.find(per => per.email === c.userEmail);
         
-        // Lógica visual para correos y nombres huérfanos
-        let displayEmail = c.userEmail;
-        if (c.userEmail.startsWith('huerfano_')) displayEmail = 'Sin definir';
+        // LÓGICA MEJORADA PARA HUÉRFANOS: 
+        // Rescatamos el nombre sugerido (tempName) o sacamos el prefijo del correo.
+        let nombreSugerido = c.tempName || c.userEmail.split('@')[0].replace('huerfano_', '').replace(/_/g, ' ');
+        // Si el correo empieza con 'huerfano_', no es real, mostramos "Sin definir". Si es real, lo mostramos.
+        let emailSugerido = c.userEmail.startsWith('huerfano_') ? 'Sin definir' : c.userEmail;
 
         return {
             ...c,
-            colaborador: p ? p.nombre : (c.tempName || 'Sin definir'),
-            userEmail: p ? p.email : displayEmail,
+            colaborador: p ? p.nombre : nombreSugerido,
+            userEmail: p ? p.email : emailSugerido,
             pais: p ? p.pais : (c.detectedCountry || 'Sin definir'),
             area: p ? p.area : 'Sin definir',
             certificacion: c.nombre,
@@ -496,13 +498,13 @@ const renderDashboard = () => {
             if (stTxt === 'Vigente') chartDataStatus['Vigente']++;
             else if (stTxt === 'Por Vencer') chartDataStatus['Por Vencer']++;
             else chartDataStatus['Vencida']++;
-            if (item.colaborador) chartDataColabs[item.colaborador] = (chartDataColabs[item.colaborador] || 0) + 1;
+            if (item.colaborador && item.colaborador !== 'Sin definir') chartDataColabs[item.colaborador] = (chartDataColabs[item.colaborador] || 0) + 1;
             if (item.pais && item.pais !== 'N/A' && item.pais !== 'Sin definir') chartDataCountries[item.pais] = (chartDataCountries[item.pais] || 0) + 1;
             if (item.area && item.area !== 'N/A' && item.area !== 'Sin definir') chartDataAreas[item.area] = (chartDataAreas[item.area] || 0) + 1;
             if (item.marca) chartDataMarcas[item.marca] = (chartDataMarcas[item.marca] || 0) + 1;
         }
 
-        // Tabla General con datos limpios
+        // Fila para: Resumen de Registros
         generalHTML += `<tr class="hover:bg-slate-50 transition-colors">
             <td class="px-6 py-4 text-center"><span class="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg uppercase tracking-widest">${item.pais}</span></td>
             <td class="px-6 py-4"><div class="font-bold text-slate-800">${item.colaborador}</div><div class="text-[11px] text-slate-500 mt-0.5 flex items-center"><i data-lucide="mail" class="w-3 h-3 mr-1"></i> ${item.userEmail} <span class="mx-2 text-slate-300">|</span> <i data-lucide="briefcase" class="w-3 h-3 mr-1"></i> ${item.area}</div></td>
@@ -510,12 +512,13 @@ const renderDashboard = () => {
             <td class="px-6 py-4"><div class="text-sm font-medium text-slate-700">${item.certificacion}</div><div class="text-[11px] mt-1 flex items-center ${stTxt === 'Vigente' ? 'text-green-600' : (stTxt === 'Por Vencer' ? 'text-amber-600' : 'text-red-600')}"><i data-lucide="calendar" class="w-3 h-3 mr-1"></i> Expira: ${item.vencimiento}</div></td>
         </tr>`;
 
+        // Fila para: Alertas de Vencimiento y Huérfanos (AQUÍ ESTÁ LA CELDA EXTRA PARA ALINEAR EL EMAIL)
         if (stTxt === 'Vencida' || stTxt === 'Por Vencer' || stTxt === 'Huérfano') {
             alertsCount++;
             alertsHTML += `<tr class="${stTxt === 'Huérfano' ? 'bg-red-50/50' : 'hover:bg-slate-50'} transition-colors">
                 <td class="px-6 py-3 text-xs font-bold text-slate-500">${item.pais}</td>
                 <td class="px-6 py-3 font-semibold text-slate-800">${item.colaborador}</td>
-                <td class="px-6 py-3 text-xs text-slate-500">${item.userEmail}</td>
+                <td class="px-6 py-3 text-xs text-slate-500 font-mono">${item.userEmail}</td>
                 <td class="px-6 py-3 text-sm text-slate-600"><span class="font-bold text-xs mr-1 text-slate-400">[${item.marca}]</span> ${item.certificacion}</td>
                 <td class="px-6 py-3 text-center text-xs font-mono text-slate-500">${item.vencimiento}</td>
                 <td class="px-6 py-3 text-right"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${stCol}">${stTxt}</span></td>
@@ -536,12 +539,11 @@ const renderDashboard = () => {
     if(statWarning) statWarning.innerText = stats.warning;
     if(statExpired) statExpired.innerText = stats.expired;
     if(alertsCountEl) alertsCountEl.innerText = alertsCount;
-    if(dashAlertsTbody) dashAlertsTbody.innerHTML = alertsHTML || `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay alertas de vencimiento.</td></tr>`;
+    if(dashAlertsTbody) dashAlertsTbody.innerHTML = alertsHTML || `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 text-sm italic">No hay alertas de vencimiento.</td></tr>`;
     if(dashGeneralTbody) dashGeneralTbody.innerHTML = generalHTML || `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 text-sm italic">No se encontraron registros.</td></tr>`;
 
     renderCharts(chartDataStatus, chartDataColabs, chartDataCountries, chartDataAreas, chartDataMarcas);
 
-    // [El código del filtro dropdown se mantiene igual, no lo modifiques, déjalo aquí como está]
     const filterContainer = document.getElementById('dash-filters-container');
     if(filterContainer) {
         let filtersHTML = '';
