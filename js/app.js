@@ -75,7 +75,13 @@ let state = {
     charts: { status: null, colabs: null, countries: null }
 };
 
-let activeDashFilters = { pais: null, area: null, marca: null, certificacion: null, colaborador: null };
+let activeDashFilters = { 
+    pais: [], // Cambiado a Array para multi-select
+    area: null, 
+    marca: null, 
+    certificacion: [], // Cambiado a Array para multi-select
+    colaborador: null 
+};
 let filterIncompletePeople = false;
 
 window.toggleIncompleteFilter = () => {
@@ -97,11 +103,11 @@ let unsubscribeCerts = null;
 let confirmActionCallback = null;
 
 const filterConfigs = [
-    { id: 'pais', label: 'Ubicación', search: false },
-    { id: 'area', label: 'Área', search: false },
-    { id: 'marca', label: 'Fabricante', search: false },
-    { id: 'certificacion', label: 'Certificación', search: true },
-    { id: 'colaborador', label: 'Colaborador', search: true }
+    { id: 'pais', label: 'Ubicación', search: false, multi: true },
+    { id: 'area', label: 'Área', search: false, multi: false },
+    { id: 'marca', label: 'Fabricante', search: false, multi: false },
+    { id: 'certificacion', label: 'Certificación', search: true, multi: true },
+    { id: 'colaborador', label: 'Colaborador', search: true, multi: false }
 ];
 
 // ==========================================
@@ -249,11 +255,35 @@ window.filterDropdownSearch = (inputEl, listId) => {
     });
 };
 
-window.setDashFilter = (key, value) => {
-    activeDashFilters[key] = value;
+window.setDashFilter = (key, value, isMulti) => {
+    if (isMulti) {
+        const index = activeDashFilters[key].indexOf(value);
+        if (index > -1) {
+            activeDashFilters[key].splice(index, 1); // Quitar si ya está
+        } else {
+            activeDashFilters[key].push(value); // Agregar si no está
+        }
+    } else {
+        activeDashFilters[key] = value;
+        // Si no es multi, cerramos el menú al elegir
+        const menuEl = document.getElementById(`menu-${key}`);
+        if(menuEl) menuEl.classList.add('hidden');
+    }
     renderDashboard();
-    const menuEl = document.getElementById(`menu-${key}`);
-    if(menuEl) menuEl.classList.add('hidden');
+};
+
+window.clearSingleFilter = (key) => {
+    activeDashFilters[key] = Array.isArray(activeDashFilters[key]) ? [] : null;
+    renderDashboard();
+};
+
+window.clearAllDashFilters = () => {
+    activeDashFilters.pais = [];
+    activeDashFilters.area = null;
+    activeDashFilters.marca = null;
+    activeDashFilters.certificacion = [];
+    activeDashFilters.colaborador = null;
+    renderDashboard();
 };
 
 window.clearAllDashFilters = () => {
@@ -463,7 +493,15 @@ const renderDashboard = () => {
 
     const filteredData = dashData.filter(item => {
         for (const [key, val] of Object.entries(activeDashFilters)) {
-            if (val && item[key] !== val) return false;
+            if (!val) continue;
+            // Lógica para Multi-select (Arrays)
+            if (Array.isArray(val) && val.length > 0) {
+                if (!val.includes(item[key])) return false;
+            } 
+            // Lógica para Single-select (Strings)
+            else if (typeof val === 'string' && item[key] !== val) {
+                return false;
+            }
         }
         return true;
     });
@@ -544,35 +582,56 @@ const renderDashboard = () => {
 
     renderCharts(chartDataStatus, chartDataColabs, chartDataCountries, chartDataAreas, chartDataMarcas);
 
-    const filterContainer = document.getElementById('dash-filters-container');
-    if(filterContainer) {
-        let filtersHTML = '';
-        filterConfigs.forEach(config => {
+    filterConfigs.forEach(config => {
             const validForThis = dashData.filter(item => {
                 for (const [key, val] of Object.entries(activeDashFilters)) {
-                    if (key !== config.id && val && item[key] !== val) return false;
+                    if (key !== config.id) {
+                        if (Array.isArray(val) && val.length > 0 && !val.includes(item[key])) return false;
+                        if (typeof val === 'string' && val && item[key] !== val) return false;
+                    }
                 }
                 return true;
             });
             const options = [...new Set(validForThis.map(item => item[config.id]))].filter(Boolean).sort();
-            const isActive = activeDashFilters[config.id] !== null;
+            
             const currentVal = activeDashFilters[config.id];
-            const pillClass = isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+            const isArray = Array.isArray(currentVal);
+            const isActive = isArray ? currentVal.length > 0 : currentVal !== null;
+            
+            // Texto del botón: si hay varios, muestra "Item +X"
+            let labelDisplay = 'Todos';
+            if (isActive) {
+                if (isArray) {
+                    labelDisplay = currentVal.length > 1 ? `${currentVal[0]} +${currentVal.length - 1}` : currentVal[0];
+                } else {
+                    labelDisplay = currentVal;
+                }
+            }
 
-            filtersHTML += `<div class="relative filter-dropdown-container">
+            const pillClass = isActive ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200';
+
+            filtersHTML += `
+            <div class="relative filter-dropdown-container">
                 <div class="flex items-center border rounded-full text-[11px] font-medium transition-all ${pillClass}">
                     <div class="px-3 py-1.5 flex items-center gap-1.5 cursor-pointer" onclick="window.toggleFilterMenu('${config.id}')">
                         <span class="${isActive ? 'opacity-80' : 'text-slate-400 font-bold'}">${config.label}:</span>
-                        <span class="font-bold truncate max-w-[120px]">${isActive ? currentVal : 'Todos'}</span>
-                        <i data-lucide="chevron-down" class="w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'} ml-1"></i>
+                        <span class="font-bold truncate max-w-[120px]">${labelDisplay}</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'}"></i>
                     </div>
-                    ${isActive ? `<div class="pr-3 pl-1.5 py-1.5 border-l border-blue-500 hover:text-red-200 cursor-pointer transition-colors" onclick="window.setDashFilter('${config.id}', null)" title="Borrar filtro"><i data-lucide="x" class="w-3 h-3"></i></div>` : ''}
+                    ${isActive ? `<div class="pr-3 pl-1.5 py-1.5 border-l ${isArray ? 'border-blue-500' : 'border-blue-500'} hover:text-red-200 cursor-pointer" onclick="window.clearSingleFilter('${config.id}')"><i data-lucide="x" class="w-3 h-3"></i></div>` : ''}
                 </div>
-                <div id="menu-${config.id}" class="filter-dropdown-menu hidden absolute top-full left-0 mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
-                    ${config.search ? `<div class="p-2 border-b border-slate-100 bg-slate-50 sticky top-0 z-10"><div class="relative"><i data-lucide="search" class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 bg-white" oninput="window.filterDropdownSearch(this, 'list-${config.id}')"></div></div>` : ''}
-                    <ul id="list-${config.id}" class="max-h-48 overflow-y-auto py-1 custom-scrollbar">
-                        ${options.length === 0 ? `<li class="px-4 py-3 text-xs text-slate-400 italic text-center">Sin opciones bajo este filtro</li>` : ''}
-                        ${options.map(opt => `<li class="px-4 py-2 text-[11px] text-slate-600 hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors ${currentVal === opt ? 'bg-blue-50 font-bold text-blue-700 border-l-2 border-blue-600' : 'border-l-2 border-transparent'}" onclick="window.setDashFilter('${config.id}', \`${opt.replace(/`/g, "\\`")}\`)">${opt}</li>`).join('')}
+                <div id="menu-${config.id}" class="filter-dropdown-menu hidden absolute top-full left-0 mt-2 w-64 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
+                    ${config.search ? `<div class="p-2 border-b bg-slate-50"><input type="text" placeholder="Buscar..." class="w-full p-2 text-xs border rounded-lg" oninput="window.filterDropdownSearch(this, 'list-${config.id}')"></div>` : ''}
+                    <ul id="list-${config.id}" class="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                        ${options.map(opt => {
+                            const isSelected = isArray ? currentVal.includes(opt) : currentVal === opt;
+                            return `
+                            <li class="px-4 py-2 text-[11px] flex items-center justify-between hover:bg-blue-50 cursor-pointer ${isSelected ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'}" 
+                                onclick="window.setDashFilter('${config.id}', \`${opt.replace(/`/g, "\\`")}\`, ${config.multi})">
+                                ${opt}
+                                ${isSelected ? '<i data-lucide="check" class="w-3 h-3"></i>' : ''}
+                            </li>`;
+                        }).join('')}
                     </ul>
                 </div>
             </div>`;
